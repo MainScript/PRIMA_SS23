@@ -499,7 +499,7 @@ var Fudge;
                     canvas.addEventListener("mousedown", canvas.requestPointerLock);
                     canvas.addEventListener("mouseup", function () { document.exitPointerLock(); });
                     // make the camera interactive (complex method in FudgeAid)
-                    FudgeAid.Viewport.expandCameraToInteractiveOrbit(viewport);
+                    let cameraOrbit = FudgeAid.Viewport.expandCameraToInteractiveOrbit(viewport);
                     // setup audio
                     let cmpListener = new ƒ.ComponentAudioListener();
                     cmpCamera.node.addComponent(cmpListener);
@@ -507,6 +507,7 @@ var Fudge;
                     FudgeCore.AudioManager.default.listenTo(graph);
                     FudgeCore.Debug.log("Audio:", FudgeCore.AudioManager.default);
                     // draw viewport once for immediate feedback
+                    FudgeCore.Render.prepare(cameraOrbit);
                     viewport.draw();
                     canvas.dispatchEvent(new CustomEvent("interactiveViewportStarted", { bubbles: true, detail: viewport }));
                 }
@@ -3070,9 +3071,10 @@ var Fudge;
         }
         hndDrop(_event, _viewSource) {
             let source = _viewSource.getDragDropSources()[0];
-            if (source instanceof ƒ.ComponentCamera)
-                // console.log("CameraDrop");
+            if (source instanceof ƒ.ComponentCamera) {
                 this.viewport.camera = source;
+                this.redraw();
+            }
             else
                 this.dispatch(Fudge.EVENT_EDITOR.SELECT, { bubbles: true, detail: { graph: source } });
         }
