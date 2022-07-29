@@ -335,7 +335,6 @@ var Fudge;
             const parser = new DOMParser();
             this.#document = parser.parseFromString(htmlContent, "text/html");
             const head = this.#document.querySelector("head");
-            //TODO: should old scripts be removed from memory first? How?
             const scripts = head.querySelectorAll("script");
             for (let script of scripts) {
                 if (script.getAttribute("editor") == "true") {
@@ -1634,10 +1633,11 @@ var Fudge;
             };
             this.goldenLayout.addItemAtLocation(config, [{ typeId: 7 /* Root */ }]);
             // this.goldenLayout.addItemAtLocation(hierarchyAndComponents, [{ typeId: LayoutManager.LocationSelector.TypeId.Root }]);
+            this.dom.addEventListener("itemselect" /* SELECT */, this.hndEvent);
             this.dom.addEventListener(Fudge.EVENT_EDITOR.SELECT, this.hndEvent);
             this.dom.addEventListener(Fudge.EVENT_EDITOR.MODIFY, this.hndEvent);
             this.dom.addEventListener("mutate" /* MUTATE */, this.hndEvent);
-            this.dom.addEventListener("itemselect" /* SELECT */, this.hndFocusNode);
+            this.dom.addEventListener(Fudge.EVENT_EDITOR.FOCUS, this.hndEvent);
             this.dom.addEventListener("rename" /* RENAME */, this.broadcastEvent);
             this.dom.addEventListener(Fudge.EVENT_EDITOR.TRANSFORM, this.hndEvent);
             if (_state["graph"])
@@ -1676,12 +1676,11 @@ var Fudge;
                             _event = new Fudge.FudgeEvent(Fudge.EVENT_EDITOR.SELECT, { detail: { graph: newGraph } });
                     }
                     break;
+                case "itemselect" /* SELECT */:
+                    _event = new Fudge.FudgeEvent(Fudge.EVENT_EDITOR.SELECT, { bubbles: false, detail: { node: _event.detail.data, view: this } });
+                    break;
             }
             this.broadcastEvent(_event);
-        };
-        hndFocusNode = (_event) => {
-            let event = new Fudge.FudgeEvent(Fudge.EVENT_EDITOR.FOCUS, { bubbles: false, detail: { node: _event.detail.data, view: this } });
-            this.broadcastEvent(event);
         };
     }
     Fudge.PanelGraph = PanelGraph;
@@ -2616,7 +2615,7 @@ var Fudge;
             switch (_event.type) {
                 // case ƒui.EVENT.RENAME: break;
                 case Fudge.EVENT_EDITOR.SELECT:
-                case Fudge.EVENT_EDITOR.FOCUS:
+                    // case EVENT_EDITOR.FOCUS:
                     this.node = _event.detail.graph || _event.detail.node;
                 case Fudge.EVENT_EDITOR.MODIFY:
                     this.fillContent();
@@ -2770,8 +2769,8 @@ var Fudge;
      * @author Jirka Dell'Oro-Friedl, HFU, 2020
      */
     class ViewHierarchy extends Fudge.View {
+        #selectionPrevious = [];
         graph;
-        // private selectedNode: ƒ.Node;
         tree;
         constructor(_container, _state) {
             super(_container, _state);
@@ -2779,7 +2778,7 @@ var Fudge;
             this.setGraph(_state.node);
             // this.parentPanel.addEventListener(ƒui.EVENT.SELECT, this.hndEvent);
             this.dom.addEventListener(Fudge.EVENT_EDITOR.SELECT, this.hndEvent);
-            this.dom.addEventListener(Fudge.EVENT_EDITOR.FOCUS, this.hndEvent);
+            // this.dom.addEventListener(EVENT_EDITOR.FOCUS, this.hndEvent);
         }
         setGraph(_graph) {
             if (!_graph) {
@@ -2808,7 +2807,7 @@ var Fudge;
         getDragDropSources() {
             return this.tree.controller.dragDrop.sources;
         }
-        focusNode(_node) {
+        showNode(_node) {
             let path = _node.getPath();
             path = path.splice(path.indexOf(this.graph));
             this.tree.show(path);
@@ -2895,16 +2894,22 @@ var Fudge;
                 case "delete" /* DELETE */:
                     this.dispatch(Fudge.EVENT_EDITOR.MODIFY, { bubbles: true });
                     break;
+                case "itemselect" /* SELECT */:
+                    //only dispatch the event to focus the node, if the node is in the current and the previous selection  
+                    let node = _event.detail["data"];
+                    if (this.#selectionPrevious.includes(node) && this.getSelection().includes(node))
+                        this.dispatch(Fudge.EVENT_EDITOR.FOCUS, { bubbles: true, detail: { node: node, view: this } });
+                    this.#selectionPrevious = this.getSelection().slice(0);
+                    break;
                 case Fudge.EVENT_EDITOR.SELECT:
-                    if (_event.detail.node)
+                    if (_event.detail.node) {
+                        this.showNode(_event.detail.node);
                         this.tree.displaySelection([_event.detail.node]);
+                    }
                     else {
                         this.setGraph(_event.detail.graph);
                         break;
                     }
-                case Fudge.EVENT_EDITOR.FOCUS:
-                    if (_event.detail.node)
-                        this.focusNode(_event.detail.node);
                     break;
             }
         };
@@ -2950,10 +2955,12 @@ var Fudge;
             this.graph = ƒ.Project.resources[_state["graph"]];
             this.createUserInterface();
             let title = `● Drop a graph from "Internal" here.\n`;
-            title += "● Use mousebuttons and ctrl-, shift- or alt-key to navigate view.\n";
-            title += "● Click to select node, rightclick to select transformations.\n";
-            title += "● Hold X, Y or Z to transform. Add shift-key to invert restriction.\n";
-            title += "● Transformation affects selected component.";
+            title += "● Use mousebuttons and ctrl-, shift- or alt-key to navigate editor camera.\n";
+            title += "● Drop camera component here to see through that camera.\n";
+            title += "● Manipulate transformations in this view:\n";
+            title += "  - Click to select node, rightclick to select transformations.\n";
+            title += "  - Select component to manipulate in view Components.\n";
+            title += "  - Hold X, Y or Z and move mouse to transform. Add shift-key to invert restriction.\n";
             this.dom.title = title;
             this.dom.tabIndex = 0;
             _container.on("resize", this.redraw);
@@ -3072,6 +3079,7 @@ var Fudge;
         hndDrop(_event, _viewSource) {
             let source = _viewSource.getDragDropSources()[0];
             if (source instanceof ƒ.ComponentCamera) {
+                this.setCameraOrthographic(false);
                 this.viewport.camera = source;
                 this.redraw();
             }
@@ -3079,6 +3087,7 @@ var Fudge;
                 this.dispatch(Fudge.EVENT_EDITOR.SELECT, { bubbles: true, detail: { graph: source } });
         }
         setCameraOrthographic(_on = false) {
+            this.viewport.camera = this.cmrOrbit.cmpCamera;
             if (_on) {
                 this.cmrOrbit.cmpCamera.projectCentral(2, 1, ƒ.FIELD_OF_VIEW.DIAGONAL, 10, 20000);
                 this.cmrOrbit.maxDistance = 10000;
@@ -3089,6 +3098,7 @@ var Fudge;
                 this.cmrOrbit.maxDistance = 1000;
                 this.cmrOrbit.distance /= 50;
             }
+            this.contextMenu.getMenuItemById(String(Fudge.CONTEXTMENU.ORTHGRAPHIC_CAMERA)).checked = _on;
             ƒ.Render.prepare(this.cmrOrbit);
             this.redraw();
         }
@@ -3111,7 +3121,8 @@ var Fudge;
                     if (detail.node) {
                         if (detail.view == this)
                             return;
-                        this.cmrOrbit.mtxLocal.translation = detail.node.mtxWorld.translation;
+                        if (_event.type == Fudge.EVENT_EDITOR.FOCUS)
+                            this.cmrOrbit.mtxLocal.translation = detail.node.mtxWorld.translation;
                         ƒ.Render.prepare(this.cmrOrbit);
                     }
                     else
