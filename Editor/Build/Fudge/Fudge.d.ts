@@ -117,7 +117,7 @@ declare namespace Fudge {
     /**
      * Extension of CustomEvent that supports a detail field with the type EventDetail
      */
-    class FudgeEvent extends CustomEvent<EventDetail> {
+    class EditorEvent extends CustomEvent<EventDetail> {
     }
 }
 declare namespace Fudge {
@@ -137,7 +137,6 @@ declare namespace Fudge {
         fileInternal: string;
         fileScript: string;
         fileStyles: string;
-        private includeAutoViewScript;
         private graphAutoView;
         constructor(_base: URL);
         openDialog(): Promise<boolean>;
@@ -150,7 +149,6 @@ declare namespace Fudge {
         protected reduceMutator(_mutator: ƒ.Mutator): void;
         private getGraphs;
         private createProjectHTML;
-        private getAutoViewScript;
         private settingsStringify;
         private panelsStringify;
         private stringifyHTML;
@@ -363,7 +361,7 @@ declare namespace Fudge {
         private views;
         constructor(_container: ComponentContainer, _state: JsonValue | undefined);
         /** Send custom copies of the given event to the views */
-        broadcastEvent: (_event: FudgeEvent) => void;
+        broadcastEvent: (_event: EditorEvent) => void;
         abstract getState(): PanelState;
         private addViewComponent;
     }
