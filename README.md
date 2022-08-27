@@ -1,10 +1,11 @@
 <img src="https://jirkadelloro.github.io/FUDGE/Miscellaneous/Logo/FudgeLogoText.png" onload="document.querySelector('h1').style.visibility='hidden'"/>  
 
 # Welcome!  
+This repository contains the software and libraries you need to start creating with FUDGE.  
+
 FUDGE is a lightweight open-source game engine and editor created for educating students in an academic environment in the field of design and development of games and highly interactive applications. It may also be used as a rapid prototyping tool to easly convey and evaluate ideas for applications and games and as a tool to create educational games.
 
 # Installation  
-This repository contains the software and libraries you need to start creating with FUDGE. 
 - Clone this repository or download the zip-file and unpack it to a place of your choice on your computer.
 - Install the node-modules required by the editor by typing `npm install` in a terminal on the FUDGE-folder or invoking install.bat.
 
