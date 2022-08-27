@@ -3,7 +3,12 @@
 # Welcome!  
 This repository contains the software and libraries you need to start creating with FUDGE.  
 
-FUDGE is a lightweight open-source game engine and editor created for educating students in an academic environment in the field of design and development of games and highly interactive applications. It may also be used as a rapid prototyping tool to easly convey and evaluate ideas for applications and games and as a tool to create educational games.
+FUDGE is a lightweight open-source game engine and editor created for educating students in an academic environment in the field of design and development of games and highly interactive applications. It may also be used as a rapid prototyping tool to easly convey and evaluate ideas for applications and games and as a tool to create educational games.#
+
+# Examples
+- See the [GameZone](http://games.hs-furtwangen.de/GameZone/) for a selection of applications students have created. Filter for "FUDGE" in the technology-dropdown
+- Material of the [Prima-Lectures](https://github.com/JirkaDellOro/Prima#examples) (Prototyping Interactive Media-Applications and Games)
+- See [UfoUndLost](https://jirkadelloro.github.io/UfoundLost/UfoundLost.html), created at the GlobalGameJam 2021
 
 # Installation  
 - Clone this repository or download the zip-file and unpack it to a place of your choice on your computer.
@@ -11,6 +16,9 @@ FUDGE is a lightweight open-source game engine and editor created for educating 
 
 # Start
 - Start the editor by typing `electron Editor/Electron` or `npm run-script run` or invoking the file FUDGE.bat using the mouse.
+
+![](https://JirkaDellOro.github.io/FUDGE/Miscellaneous/Screenshots/Editor.png)
+
 - Create a new project via the menu. FUDGE creates the required files for you to start with, including some code, partially deactivated, for you to explore.
 - Start creating assets in the project panel and build graphs in the graph panel. The editor is fully controlled by the menu bar, right click in the various views for context menus and by drag/drop between the views. Observe the hints in the views guiding you.
 - To start without the editor, include the script FudgeCore.js in the head of your HTML-page for the minimal setup. See and examine this example of a [minimal scene on codepen](https://codepen.io/JirkaDellOro/pen/VwzveRP)
