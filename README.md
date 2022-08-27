@@ -11,7 +11,7 @@ FUDGE is a lightweight open-source game engine and editor created for educating 
 - See [UfoUndLost](https://jirkadelloro.github.io/UfoundLost/UfoundLost.html), created at the GlobalGameJam 2021
 
 # Installation  
-- Clone this repository or download the zip-file and unpack it to a place of your choice on your computer.
+- Clone this [repository](https://github.com/JirkaDellOro/FUDGE_Runtime) or download the zip-file and unpack it to a place of your choice on your computer.
 - Install the node-modules required by the editor by typing `npm install` in a terminal on the FUDGE-folder or invoking install.bat.
 
 # Start
