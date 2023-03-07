@@ -152,10 +152,10 @@ declare namespace FudgeCore {
         CHILD_REMOVE = "childRemove",
         /** dispatched to a {@link Mutable} when it mutates */
         MUTATE = "mutate",
-        /** dispatched to a {@link GraphInstance} when the graph it connects to mutates */
+        /** dispatched by a {@link Graph} when it mutates, {@link GraphInstance}s connected to the graph listen */
         MUTATE_GRAPH = "mutateGraph",
-        /** dispatched to a {@link GraphInstance} after {@link MUTATE_GRAPH} to signal that all instances were informed*/
-        MUTATE_GRAPH_DONE = "mutateGraphDone",
+        /** dispatched by a {@link GraphInstance} when it reflected the mutation of the {@link Graph} it's connected to */
+        MUTATE_INSTANCE = "mutateGraphDone",
         /** dispatched to {@link Viewport} when it gets the focus to receive keyboard input */
         FOCUS_IN = "focusin",
         /** dispatched to {@link Viewport} when it loses the focus to receive keyboard input */
@@ -846,8 +846,7 @@ declare namespace FudgeCore {
          */
         get magnitudeSquared(): number;
         /**
-         * @returns A deep copy of the vector.
-         * TODO: rename this clone and create a new method copy, which copies the values from a vector given
+         * Creates and returns a clone of this
          */
         get clone(): Vector2;
         /**
@@ -859,6 +858,10 @@ declare namespace FudgeCore {
          */
         set geo(_geo: Geo2);
         recycle(): void;
+        /**
+         * Copies the values of the given vector into this
+         */
+        copy(_original: Vector2): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
          * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
@@ -1412,61 +1415,59 @@ declare namespace FudgeCore {
      */
     enum ANIMATION_PLAYMODE {
         /**Plays animation in a loop: it restarts once it hit the end.*/
-        LOOP = 0,
+        LOOP = "loop",
         /**Plays animation once and stops at the last key/frame*/
-        PLAYONCE = 1,
+        PLAY_ONCE = "playOnce",
         /**Plays animation once and stops on the first key/frame */
-        PLAYONCESTOPAFTER = 2,
+        PLAY_ONCE_RESET = "playOnceReset",
         /**Plays animation like LOOP, but backwards.*/
-        REVERSELOOP = 3,
+        REVERSE_LOOP = "reverseLoop",
         /**Causes the animation not to play at all. Useful for jumping to various positions in the animation without proceeding in the animation.*/
-        STOP = 4
+        STOP = "stop"
     }
-    enum ANIMATION_PLAYBACK {
+    enum ANIMATION_QUANTIZATION {
         /**Calculates the state of the animation at the exact position of time. Ignores FPS value of animation.*/
-        TIMEBASED_CONTINOUS = 0,
+        CONTINOUS = "continous",
         /**Limits the calculation of the state of the animation to the FPS value of the animation. Skips frames if needed.*/
-        TIMEBASED_RASTERED_TO_FPS = 1,
+        DISCRETE = "discrete",
         /** Advances the time each frame according to the FPS value of the animation, ignoring the actual duration of the frames. Doesn't skip any frames.*/
-        FRAMEBASED = 2
+        FRAMES = "frames"
     }
     /**
-     * Animation Class to hold all required Objects that are part of an Animation.
-     * Also holds functions to play said Animation.
-     * Can be added to a Node and played through {@link ComponentAnimator}.
-     * @author Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021
+     * Describes and controls and animation by yielding mutators
+     * according to the stored {@link AnimationStructure} and {@link AnimationSequence}s
+     * Applied to a {@link Node} directly via script or {@link ComponentAnimator}.
+     * @author Lukas Scheuerle, HFU, 21019 | Jirka Dell'Oro-Friedl, HFU, 2021-2023
      */
     class Animation extends Mutable implements SerializableResource {
+        #private;
+        static readonly subclasses: typeof Animation[];
+        static readonly iSubclass: number;
         idResource: string;
         name: string;
         totalTime: number;
         labels: AnimationLabel;
         animationStructure: AnimationStructure;
         events: AnimationEventTrigger;
-        private framesPerSecond;
+        protected framesPerSecond: number;
         private eventsProcessed;
-        private animationStructuresProcessed;
         constructor(_name?: string, _animStructure?: AnimationStructure, _fps?: number);
+        protected static registerSubclass(_subClass: typeof Animation): number;
         get getLabels(): Enumerator;
         get fps(): number;
         set fps(_fps: number);
+        clearCache(): void;
         /**
-         * Generates a new "Mutator" with the information to apply to the {@link Node} the {@link ComponentAnimator} is attached to with {@link Node.applyAnimation}.
-         * @param _time The time at which the animation currently is at
-         * @param _direction The direction in which the animation is supposed to be playing back. >0 == forward, 0 == stop, <0 == backwards
-         * @param _playback The playbackmode the animation is supposed to be calculated with.
-         * @returns a "Mutator" to apply.
+         * Generates and returns a {@link Mutator} with the information to apply to the {@link Node} to animate
+         * in the state the animation is in at the given time, direction and quantization
          */
-        getMutated(_time: number, _direction: number, _playback: ANIMATION_PLAYBACK): Mutator;
+        getState(_time: number, _direction: number, _quantization: ANIMATION_QUANTIZATION): Mutator;
         /**
-         * Returns a list of the names of the events the {@link ComponentAnimator} needs to fire between _min and _max.
-         * @param _min The minimum time (inclusive) to check between
-         * @param _max The maximum time (exclusive) to check between
-         * @param _playback The playback mode to check in. Has an effect on when the Events are fired.
+         * Returns a list of the names of the events the {@link ComponentAnimator} needs to fire between _min and _max input values.
          * @param _direction The direction the animation is supposed to run in. >0 == forward, 0 == stop, <0 == backwards
          * @returns a list of strings with the names of the custom events to fire.
          */
-        getEventsToFire(_min: number, _max: number, _playback: ANIMATION_PLAYBACK, _direction: number): string[];
+        getEventsToFire(_min: number, _max: number, _quantization: ANIMATION_QUANTIZATION, _direction: number): string[];
         /**
          * Adds an Event to the List of events.
          * @param _name The name of the event (needs to be unique per Animation).
@@ -1494,7 +1495,6 @@ declare namespace FudgeCore {
         calculateDirection(_time: number, _playmode: ANIMATION_PLAYMODE): number;
         serialize(): Serialization;
         deserialize(_serialization: Serialization): Promise<Serializable>;
-        getMutator(): Mutator;
         protected reduceMutator(_mutator: Mutator): void;
         /**
          * Traverses an AnimationStructure and returns the Serialization of said Structure.
@@ -1509,17 +1509,11 @@ declare namespace FudgeCore {
          */
         private traverseStructureForDeserialization;
         /**
-         * Finds the list of events to be used with these settings.
-         * @param _direction The direction the animation is playing in.
-         * @param _playback The playbackmode the animation is playing in.
-         * @returns The correct AnimationEventTrigger Object to use
+         * Finds and returns the list of events to be used with these settings.
          */
         private getCorrectEventList;
         /**
-         * Traverses an AnimationStructure to turn it into the "Mutator" to return to the Component.
-         * @param _structure The strcuture to traverse
-         * @param _time the point in time to write the animation numbers into.
-         * @returns The "Mutator" filled with the correct values at the given time.
+         * Traverses an {@link AnimationStructure} and returns a {@link Mutator} describing the state at the given time
          */
         private traverseStructureForMutator;
         /**
@@ -1619,9 +1613,10 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Holds information about discrete points in time (rounded to 2 digits after decimal point, use {@link toKeyTime} to convert continous value to discrete), their accompanying values as well as their slopes.
-     * Also holds a reference to the {@link AnimationFunction}s that come in and out of the sides. The {@link AnimationFunction}s are handled by the {@link AnimationSequence}s.
-     * Saved inside an {@link AnimationSequence}.
+     * Holds information about continous points in time their accompanying values as well as their slopes.
+     * Also holds a reference to the {@link AnimationFunction}s that come in and out of the sides.
+     * The {@link AnimationFunction}s are handled by the {@link AnimationSequence}s.
+     * If the property constant is true, the value does not change and wil not be interpolated between this and the next key in a sequence
      * @author Lukas Scheuerle, HFU, 2019
      */
     class AnimationKey extends Mutable implements Serializable {
@@ -1639,10 +1634,6 @@ declare namespace FudgeCore {
          * @returns >0 if a>b, 0 if a=b, <0 if a<b
          */
         static compare(_a: AnimationKey, _b: AnimationKey): number;
-        /**
-         * Round a continous value to a discrete key time
-         */
-        static toKeyTime(_time: number): number;
         get time(): number;
         set time(_time: number);
         get value(): number;
@@ -1671,7 +1662,7 @@ declare namespace FudgeCore {
         /**
          * Evaluates the sequence at the given point in time.
          * @param _time the point in time at which to evaluate the sequence in milliseconds.
-         * @returns the value of the sequence at the given time. 0 if there are no keys.
+         * @returns the value of the sequence at the given time. undefined if there are no keys.
          */
         evaluate(_time: number): number;
         /**
@@ -1689,6 +1680,10 @@ declare namespace FudgeCore {
          * @param _key the key to remove
          */
         removeKey(_key: AnimationKey): void;
+        /**
+         * Find a key in the sequence exactly matching the given time.
+         */
+        findKey(_time: number): AnimationKey;
         /**
          * Removes the Animation Key at the given index from the keys.
          * @param _index the zero-based index at which to remove the key
@@ -1709,6 +1704,28 @@ declare namespace FudgeCore {
          * Utility function that (re-)generates all functions in the sequence.
          */
         private regenerateFunctions;
+    }
+}
+declare namespace FudgeCore {
+    class AnimationSprite extends Animation {
+        static readonly iSubclass: number;
+        texture: Texture;
+        private idTexture;
+        private frames;
+        private wrapAfter;
+        private start;
+        private size;
+        private next;
+        private wrap;
+        constructor(_name?: string);
+        setTexture(_texture: Texture): void;
+        create(_texture: Texture, _frames: number, _wrapAfter: number, _start: Vector2, _size: Vector2, _next: Vector2, _wrap: Vector2, _framesPerSecond: number): void;
+        getScale(): Vector2;
+        getPositions(): Vector2[];
+        mutate(_mutator: Mutator, _selection?: string[], _dispatchMutate?: boolean): Promise<void>;
+        serialize(): Serialization;
+        deserialize(_s: Serialization): Promise<Serializable>;
+        convertToAnimation(): Animation;
     }
 }
 declare namespace FudgeCore {
@@ -1736,6 +1753,20 @@ declare namespace FudgeCore {
     }
 }
 declare namespace FudgeCore {
+    const enum EVENT_AUDIO {
+        /** broadcast to a {@link Node} and all its descendants in the graph after it was appended to a parent */
+        CHILD_APPEND = "childAppendToAudioGraph",
+        /** broadcast to a {@link Node} and all its descendants in the graph just before its being removed from its parent */
+        CHILD_REMOVE = "childRemoveFromAudioGraph",
+        /** broadcast to a {@link Node} and all its descendants in the graph to update the panners in AudioComponents */
+        UPDATE = "updateAudioGraph",
+        /** fired when the audio file was loaded and is ready for playing */
+        READY = "ready",
+        /** fired when the end of the audio is reached while playing */
+        ENDED = "ended"
+    }
+}
+declare namespace FudgeCore {
     /**
      * Extends the standard AudioContext for integration with FUDGE-graphs.
      * Creates a default object at startup to be addressed as AudioManager default.
@@ -1748,6 +1779,7 @@ declare namespace FudgeCore {
         readonly gain: GainNode;
         private graph;
         private cmpListener;
+        private static eventUpdate;
         constructor(contextOptions?: AudioContextOptions);
         /**
          * Set the master volume
@@ -1777,7 +1809,7 @@ declare namespace FudgeCore {
 }
 declare namespace FudgeCore {
     /**
-     * Holds a reference to an {@link Animation} and controls it. Controls playback and playmode as well as speed.
+     * Holds a reference to an {@link Animation} and controls it. Controls quantization and playmode as well as speed.
      * @authors Lukas Scheuerle, HFU, 2019 | Jirka Dell'Oro-Friedl, HFU, 2021 | Jonas Plotzky, HFU, 2022
      */
     class ComponentAnimator extends Component {
@@ -1785,10 +1817,10 @@ declare namespace FudgeCore {
         static readonly iSubclass: number;
         animation: Animation;
         playmode: ANIMATION_PLAYMODE;
-        playback: ANIMATION_PLAYBACK;
+        quantization: ANIMATION_QUANTIZATION;
         scaleWithGameTime: boolean;
         animateInEditor: boolean;
-        constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _playback?: ANIMATION_PLAYBACK);
+        constructor(_animation?: Animation, _playmode?: ANIMATION_PLAYMODE, _quantization?: ANIMATION_QUANTIZATION);
         set scale(_scale: number);
         get scale(): number;
         /**
@@ -1817,7 +1849,6 @@ declare namespace FudgeCore {
         private activateListeners;
         /**
          * Updates the Animation.
-         * Gets called every time the Loop fires the LOOP_FRAME Event.
          * Uses the built-in time unless a different time is specified.
          * May also be called from updateAnimation().
          */
@@ -2468,20 +2499,6 @@ declare namespace FudgeCore {
         static createDelegate(_headline: string): Function;
         private static getIndentation;
         private static print;
-    }
-}
-declare namespace FudgeCore {
-    const enum EVENT_AUDIO {
-        /** broadcast to a {@link Node} and all its descendants in the graph after it was appended to a parent */
-        CHILD_APPEND = "childAppendToAudioGraph",
-        /** broadcast to a {@link Node} and all its descendants in the graph just before its being removed from its parent */
-        CHILD_REMOVE = "childRemoveFromAudioGraph",
-        /** broadcast to a {@link Node} and all its descendants in the graph to update the panners in AudioComponents */
-        UPDATE = "updateAudioGraph",
-        /** fired when the audio file was loaded and is ready for playing */
-        READY = "ready",
-        /** fired when the end of the audio is reached while playing */
-        ENDED = "ended"
     }
 }
 declare namespace FudgeCore {
@@ -3688,8 +3705,7 @@ declare namespace FudgeCore {
          */
         get magnitudeSquared(): number;
         /**
-         * Returns a copy of this vector
-         * TODO: rename this clone and create a new method copy, which copies the values from a vector given
+         * Creates and returns a clone of this vector
          */
         get clone(): Vector3;
         /**
@@ -3699,6 +3715,10 @@ declare namespace FudgeCore {
         set geo(_geo: Geo3);
         get geo(): Geo3;
         recycle(): void;
+        /**
+         * Copies the values of the given vector into this
+         */
+        copy(_original: Vector3): void;
         /**
          * Returns true if the coordinates of this and the given vector are to be considered identical within the given tolerance
          * TODO: examine, if tolerance as criterium for the difference is appropriate with very large coordinate values or if _tolerance should be multiplied by coordinate value
@@ -5122,8 +5142,8 @@ declare namespace FudgeCore {
         */
         static raycast(_origin: Vector3, _direction: Vector3, _length?: number, _debugDraw?: boolean, _group?: COLLISION_GROUP): RayHitInfo;
         /**
-        * Simulates the physical world. _deltaTime is the amount of time between physical steps, default is 60 frames per second ~17ms.
-        * A frame timing can't be smaller than 1/30 of a second, or else it will be set to 30 frames, to have more consistent frame calculations.
+        * Simulates the physical world. _deltaTime is the amount of time between physical steps, default is about 17ms (assuming 60 frames per second).
+        * The maximum value is 1/30 of a second, to have more consistent frame calculations.
         */
         static simulate(_deltaTime?: number): void;
         /**
@@ -5500,6 +5520,8 @@ declare namespace FudgeCore {
          * Performs a pick on all {@link ComponentPick}s in the branch of this viewport
          * using a ray from its camera through the client coordinates given in the event.
          * Dispatches the event to all nodes hit.
+         * If {@link PICK.CAMERA} was chosen as the method to pick, a pick property gets added to the event,
+         * which holds the detailed information, but is overwritten for each node.
          */
         dispatchPointerEvent(_event: PointerEvent): void;
         /**

@@ -226,6 +226,11 @@ var FudgeUserInterface;
             let div = document.createElement("div");
             for (let key in _mutator) {
                 let value = Reflect.get(_mutator, key);
+                // if (value === undefined) // at this time (1/23) adding a property to an animation in the editor creates an empty keys list...
+                // {
+                //   div.appendChild(this.createMutatorElement(key, Object, {})); 
+                //   continue;
+                // }
                 if (value instanceof Object) {
                     // let details: Details = Generator.createDetails(key, "Details");
                     let details = new FudgeUserInterface.Details(key, "Details");
@@ -2470,22 +2475,22 @@ var FudgeUserInterface;
                     this.dispatchEvent(new Event("delete" /* DELETE */, { bubbles: true }));
                     break;
                 case ƒ.KEYBOARD_CODE.C:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("copy" /* COPY */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("copy" /* COPY */, { bubbles: true }));
+                    }
                     break;
                 case ƒ.KEYBOARD_CODE.V:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("paste" /* PASTE */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("paste" /* PASTE */, { bubbles: true }));
+                    }
                     break;
                 case ƒ.KEYBOARD_CODE.X:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("cut" /* CUT */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("cut" /* CUT */, { bubbles: true }));
+                    }
                     break;
             }
         };
@@ -3026,22 +3031,22 @@ var FudgeUserInterface;
                     this.dispatchEvent(new Event("delete" /* DELETE */, { bubbles: true }));
                     break;
                 case ƒ.KEYBOARD_CODE.C:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("copy" /* COPY */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("copy" /* COPY */, { bubbles: true }));
+                    }
                     break;
                 case ƒ.KEYBOARD_CODE.V:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("paste" /* PASTE */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("paste" /* PASTE */, { bubbles: true }));
+                    }
                     break;
                 case ƒ.KEYBOARD_CODE.X:
-                    if (!_event.ctrlKey)
-                        break;
-                    _event.preventDefault();
-                    this.dispatchEvent(new Event("cut" /* CUT */, { bubbles: true }));
+                    if (_event.ctrlKey || _event.metaKey) {
+                        _event.preventDefault();
+                        this.dispatchEvent(new Event("cut" /* CUT */, { bubbles: true }));
+                    }
                     break;
             }
         };
