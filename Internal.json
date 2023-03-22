@@ -15,7 +15,23 @@
                 "ƒ.Node": {
                   "name": "Floor",
                   "active": true,
-                  "components": {},
+                  "components": {
+                    "ComponentMesh": [
+                      {
+                        "ƒ.ComponentMesh": {
+                          "idMesh": "MeshQuad|2023-03-22T15:59:54.710Z|36303",
+                          "pivot": {
+                            "translation": "[0, 0, 0]",
+                            "rotation": "[0, 0, 0]",
+                            "scaling": "[1, 1, 1]"
+                          },
+                          "Component": {
+                            "active": true
+                          }
+                        }
+                      }
+                    ]
+                  },
                   "children": []
                 }
               }
@@ -25,6 +41,12 @@
       ],
       "idResource": "Graph|2023-03-22T15:56:51.412Z|62202",
       "type": "Graph"
+    }
+  },
+  "MeshQuad|2023-03-22T15:59:54.710Z|36303": {
+    "ƒ.MeshQuad": {
+      "idResource": "MeshQuad|2023-03-22T15:59:54.710Z|36303",
+      "name": "Floor0"
     }
   }
 }
