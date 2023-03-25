@@ -38,19 +38,24 @@ var Script;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
-    var ƒ = FudgeCore;
-    ƒ.Debug.info("Main Program Template running!");
+    var fudge = FudgeCore;
+    fudge.Debug.info("Main Program Template running!");
     let viewport;
+    let sonic;
     document.addEventListener("interactiveViewportStarted", start);
     function start(_event) {
         viewport = _event.detail;
-        ƒ.Loop.addEventListener("loopFrame" /* ƒ.EVENT.LOOP_FRAME */, update);
-        // ƒ.Loop.start();  // start the game loop to continously draw the viewport, update the audiosystem and drive the physics i/a
+        // get the Node named "Sonic" from the graph attached to the viewport
+        sonic = viewport.getBranch().getChildrenByName("Sonic")[0];
+        fudge.Loop.addEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
+        fudge.Loop.start();
     }
     function update(_event) {
-        // ƒ.Physics.simulate();  // if physics is included and used
+        if (sonic) {
+            sonic.cmpTransform.mtxLocal.translateX(0.1);
+        }
         viewport.draw();
-        ƒ.AudioManager.default.update();
+        fudge.AudioManager.default.update();
     }
 })(Script || (Script = {}));
 //# sourceMappingURL=Script.js.map
