@@ -6,18 +6,6 @@ declare namespace Script {
     }
 }
 declare namespace Script {
-    import fudge = FudgeCore;
-    class Character {
-        cmp: fudge.Node;
-        velocity: fudge.Vector3;
-        acceleration: fudge.Vector3;
-        terminalVelocity: fudge.Vector3;
-        constructor(name: string, x: number, y: number, z: number, viewport: fudge.Viewport, terminalVelocity: fudge.Vector3);
-        applyGravity(g: number): void;
-        private updateVelocity;
-    }
-}
-declare namespace Script {
     import ƒ = FudgeCore;
     class CustomComponentScript extends ƒ.ComponentScript {
         static readonly iSubclass: number;
@@ -28,16 +16,62 @@ declare namespace Script {
 }
 declare namespace Script {
 }
-declare module "constants" {
-    const _default: {
-        bg: {
-            width: number;
-            height: number;
-        };
-        sonic: {
-            width: number;
-            height: number;
-        };
-    };
-    export default _default;
+declare namespace Script {
+    class Character {
+        private _acceleration;
+        private _cmp;
+        private _definition;
+        private _position;
+        private _velocity;
+        constructor(_definition: CharacterDefinition, viewport: FudgeCore.Viewport);
+        set acceleration(_acceleration: FudgeCore.Vector2);
+        applyGravity(): void;
+        get velocity(): FudgeCore.Vector2;
+        updateVelocity(): void;
+        updatePosition(): void;
+        applyForce(_force: FudgeCore.Vector2): void;
+        applyImpulse(_impulse: FudgeCore.Vector2): void;
+    }
+}
+declare namespace Script {
+    class Sonic {
+        private _character;
+        constructor(viewport: FudgeCore.Viewport);
+        update(): void;
+        jump(): void;
+        move(_direction: Direction): void;
+        stop(): void;
+    }
+}
+declare namespace Script {
+    const defSonic: PlayableCharacter;
+}
+declare namespace Script {
+    enum Direction {
+        LEFT = -1,
+        RIGHT = 1
+    }
+}
+declare namespace Script {
+    const GRAVITY = 0;
+}
+declare namespace Script {
+    interface Character {
+        acceleration: FudgeCore.Vector2;
+        cmp: FudgeCore.Node;
+        definition: CharacterDefinition;
+        position: FudgeCore.Vector3;
+        velocity: FudgeCore.Vector2;
+    }
+    interface CharacterDefinition {
+        name: string;
+        height: number;
+        terminalVelocity: FudgeCore.Vector2;
+        width: number;
+    }
+    interface PlayableCharacter extends CharacterDefinition {
+        jumpImpulse: number;
+        moveForce: number;
+        framesToStop: number;
+    }
 }

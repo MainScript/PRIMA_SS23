@@ -14,40 +14,6 @@ var Script;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
-    var fudge = FudgeCore;
-    class Character {
-        cmp;
-        velocity = fudge.Vector3.ZERO();
-        acceleration = fudge.Vector3.ZERO();
-        terminalVelocity;
-        constructor(name, x, y, z, viewport, terminalVelocity) {
-            this.cmp = viewport.getBranch().getChildrenByName(name)[0];
-            this.cmp.cmpTransform.mtxLocal.translate(new fudge.Vector3(x, y, z));
-            this.terminalVelocity = terminalVelocity;
-        }
-        applyGravity(g) {
-            this.acceleration.y = g;
-        }
-        updateVelocity() {
-            this.velocity.add(this.acceleration);
-            if (this.velocity.x > this.terminalVelocity.x) {
-                this.velocity.x = this.terminalVelocity.x;
-            }
-            if (this.velocity.x < -this.terminalVelocity.x) {
-                this.velocity.x = -this.terminalVelocity.x;
-            }
-            if (this.velocity.y > this.terminalVelocity.y) {
-                this.velocity.y = this.terminalVelocity.y;
-            }
-            if (this.velocity.y < -this.terminalVelocity.y) {
-                this.velocity.y = -this.terminalVelocity.y;
-            }
-        }
-    }
-    Script.Character = Character;
-})(Script || (Script = {}));
-var Script;
-(function (Script) {
     var ƒ = FudgeCore;
     ƒ.Project.registerScriptNamespace(Script); // Register the namespace to FUDGE for serialization
     class CustomComponentScript extends ƒ.ComponentScript {
@@ -92,47 +58,128 @@ var Script;
     document.addEventListener("interactiveViewportStarted", start);
     function start(_event) {
         viewport = _event.detail;
-        sonic = viewport.getBranch().getChildrenByName("Sonic")[0];
         let cmpCamera = new Script.Camera(3, 1, 6, viewport);
         viewport.camera = cmpCamera.cmp;
+        sonic = new Script.Sonic(viewport);
         fudge.Loop.addEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
         fudge.Loop.start();
     }
     function update(_event) {
         if (sonic) {
             if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.A, fudge.KEYBOARD_CODE.ARROW_LEFT])) {
-                sonic.cmpTransform.mtxLocal.translateX(-0.1);
+                sonic.move(Script.Direction.LEFT);
             }
             else if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.D, fudge.KEYBOARD_CODE.ARROW_RIGHT])) {
-                sonic.cmpTransform.mtxLocal.translateX(0.1);
+                sonic.move(Script.Direction.RIGHT);
             }
             else if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.W, fudge.KEYBOARD_CODE.ARROW_UP])) {
-                sonic.cmpTransform.mtxLocal.translateY(0.1);
+                sonic.jump();
             }
-            else if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.S, fudge.KEYBOARD_CODE.ARROW_DOWN])) {
-                sonic.cmpTransform.mtxLocal.translateY(-0.1);
+            else {
+                sonic.stop();
             }
+            sonic.update();
         }
         viewport.draw();
     }
 })(Script || (Script = {}));
-System.register("constants", [], function (exports_1, context_1) {
-    "use strict";
-    var __moduleName = context_1 && context_1.id;
-    return {
-        setters: [],
-        execute: function () {
-            exports_1("default", {
-                bg: {
-                    width: 8,
-                    height: 6
-                },
-                sonic: {
-                    width: 1,
-                    height: 1
-                }
-            });
+var Script;
+(function (Script) {
+    class Character {
+        _acceleration = FudgeCore.Vector2.ZERO();
+        _cmp;
+        _definition;
+        _position;
+        _velocity = FudgeCore.Vector2.ZERO();
+        constructor(_definition, viewport) {
+            this._definition = _definition;
+            this._cmp = viewport.getBranch().getChildrenByName(_definition.name)[0];
+            this._position = this._cmp.mtxLocal.translation;
         }
+        set acceleration(_acceleration) {
+            this._acceleration = _acceleration;
+        }
+        applyGravity() {
+            this._acceleration.y = Script.GRAVITY;
+        }
+        get velocity() {
+            return this._velocity;
+        }
+        updateVelocity() {
+            this._velocity.add(this._acceleration);
+            this._acceleration = FudgeCore.Vector2.ZERO();
+            if (this._velocity.x > this._definition.terminalVelocity.x) {
+                this._velocity.x = this._definition.terminalVelocity.x;
+            }
+            else if (this._velocity.x < -this._definition.terminalVelocity.x) {
+                this._velocity.x = -this._definition.terminalVelocity.x;
+            }
+            if (this._velocity.y > this._definition.terminalVelocity.y) {
+                this._velocity.y = this._definition.terminalVelocity.y;
+            }
+            else if (this._velocity.y < -this._definition.terminalVelocity.y) {
+                this._velocity.y = -this._definition.terminalVelocity.y;
+            }
+        }
+        updatePosition() {
+            this._position.add(this._velocity.toVector3());
+            this._cmp.mtxLocal.translation = this._position;
+        }
+        applyForce(_force) {
+            this._acceleration.add(_force);
+        }
+        applyImpulse(_impulse) {
+            this._velocity.add(_impulse);
+        }
+    }
+    Script.Character = Character;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    class Sonic {
+        _character;
+        constructor(viewport) {
+            this._character = new Script.Character(Script.defSonic, viewport);
+        }
+        update() {
+            this._character.applyGravity();
+            this._character.updateVelocity();
+            this._character.updatePosition();
+        }
+        jump() {
+            this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
+        }
+        move(_direction) {
+            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveForce, 0));
+        }
+        stop() {
+            this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / Script.defSonic.framesToStop, 0));
+        }
+    }
+    Script.Sonic = Sonic;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    Script.defSonic = {
+        name: "Sonic",
+        height: 1,
+        terminalVelocity: new FudgeCore.Vector2(0.05, 0.1),
+        width: 1,
+        jumpImpulse: 0.1,
+        moveForce: 0.0025,
+        framesToStop: 20
     };
-});
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    let Direction;
+    (function (Direction) {
+        Direction[Direction["LEFT"] = -1] = "LEFT";
+        Direction[Direction["RIGHT"] = 1] = "RIGHT";
+    })(Direction = Script.Direction || (Script.Direction = {}));
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    Script.GRAVITY = -0.00;
+})(Script || (Script = {}));
 //# sourceMappingURL=Script.js.map
