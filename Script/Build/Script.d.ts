@@ -17,20 +17,47 @@ declare namespace Script {
 declare namespace Script {
 }
 declare namespace Script {
+    class BoundingBox {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        _origin: FudgeCore.ORIGIN2D;
+        constructor(_x: number, _y: number, _width: number, _height: number, _origin: FudgeCore.ORIGIN2D);
+        get top(): number;
+        get bottom(): number;
+        get left(): number;
+        get right(): number;
+    }
+}
+declare namespace Script {
+    class CollisionChecker {
+        checkCollision(a: Tile | CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
+        private getRectFromObject;
+        private objectIsTile;
+        private getIntersection;
+    }
+}
+declare namespace Script {
     class Character {
         private _acceleration;
         private _cmp;
         private _definition;
         private _position;
         private _velocity;
+        private _viewport;
+        private _intersection;
         constructor(_definition: CharacterDefinition, viewport: FudgeCore.Viewport);
         set acceleration(_acceleration: FudgeCore.Vector2);
+        get acceleration(): FudgeCore.Vector2;
+        get collision(): boolean;
         applyGravity(): void;
         get velocity(): FudgeCore.Vector2;
         updateVelocity(): void;
         updatePosition(): void;
         applyForce(_force: FudgeCore.Vector2): void;
         applyImpulse(_impulse: FudgeCore.Vector2): void;
+        checkCollision(): void;
     }
 }
 declare namespace Script {
@@ -44,7 +71,7 @@ declare namespace Script {
     }
 }
 declare namespace Script {
-    const defSonic: PlayableCharacter;
+    const defSonic: PlayableCharacterDefinition;
 }
 declare namespace Script {
     enum Direction {
@@ -53,25 +80,42 @@ declare namespace Script {
     }
 }
 declare namespace Script {
-    const GRAVITY = 0;
+    const GRAVITY = -0.005;
 }
 declare namespace Script {
-    interface Character {
-        acceleration: FudgeCore.Vector2;
+    const defFloorStraight4x1: TileDefinition;
+    const defRampUpFull: TileDefinition;
+    const collidables: TileDefinition[];
+}
+declare namespace Script {
+    interface CharacterSprite extends Sprite {
         cmp: FudgeCore.Node;
         definition: CharacterDefinition;
-        position: FudgeCore.Vector3;
-        velocity: FudgeCore.Vector2;
     }
-    interface CharacterDefinition {
-        name: string;
-        height: number;
+    interface CharacterDefinition extends SpriteDefinition {
         terminalVelocity: FudgeCore.Vector2;
-        width: number;
     }
-    interface PlayableCharacter extends CharacterDefinition {
+    interface PlayableCharacterDefinition extends CharacterDefinition {
         jumpImpulse: number;
         moveForce: number;
         framesToStop: number;
+    }
+}
+declare namespace Script {
+    interface SpriteDefinition {
+        name: string;
+        width: number;
+        height: number;
+        origin: FudgeCore.ORIGIN2D;
+    }
+    interface TileDefinition extends SpriteDefinition {
+        XYMapping: (x: number) => number;
+    }
+    interface Sprite {
+        cmp: FudgeCore.Node;
+        definition: SpriteDefinition;
+    }
+    interface Tile extends Sprite {
+        definition: TileDefinition;
     }
 }

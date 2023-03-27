@@ -5,13 +5,16 @@ namespace Script {
       this._character = new Character(defSonic, viewport);
     }
     public update(): void {
+      this._character.checkCollision();
       this._character.applyGravity();
       this._character.updateVelocity();
       this._character.updatePosition();
     }
 
     public jump(): void {
-      this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse));
+      if (this._character.collision) {
+        this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse));
+      }
     }
 
     public move(_direction: Direction): void {

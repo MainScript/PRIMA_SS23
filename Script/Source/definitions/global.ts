@@ -1,3 +1,3 @@
 namespace Script {
-  export const GRAVITY = -0.00;
+  export const GRAVITY = -0.005;
 }

@@ -1,20 +1,14 @@
 namespace Script {
-  export interface Character {
-    acceleration: FudgeCore.Vector2;
+  export interface CharacterSprite extends Sprite {
     cmp: FudgeCore.Node;
     definition: CharacterDefinition;
-    position: FudgeCore.Vector3;
-    velocity: FudgeCore.Vector2;
   }
 
-  export interface CharacterDefinition {
-    name: string;
-    height: number;
+  export interface CharacterDefinition extends SpriteDefinition {
     terminalVelocity: FudgeCore.Vector2;
-    width: number;
   }
 
-  export interface PlayableCharacter extends CharacterDefinition {
+  export interface PlayableCharacterDefinition extends CharacterDefinition {
     jumpImpulse: number;
     moveForce: number;
     framesToStop: number;
