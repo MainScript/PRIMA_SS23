@@ -1,11 +1,4 @@
 declare namespace Script {
-    import fudge = FudgeCore;
-    class Camera {
-        cmp: fudge.ComponentCamera;
-        constructor(x: number, y: number, z: number, viewport: fudge.Viewport);
-    }
-}
-declare namespace Script {
     import ƒ = FudgeCore;
     class CustomComponentScript extends ƒ.ComponentScript {
         static readonly iSubclass: number;
@@ -17,27 +10,13 @@ declare namespace Script {
 declare namespace Script {
 }
 declare namespace Script {
-    class BoundingBox {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-        _origin: FudgeCore.ORIGIN2D;
-        constructor(_x: number, _y: number, _width: number, _height: number, _origin: FudgeCore.ORIGIN2D);
-        get top(): number;
-        get bottom(): number;
-        get left(): number;
-        get right(): number;
-    }
-}
-declare namespace Script {
-    class CollisionChecker {
-        checkCollision(a: CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
-        private getRectFromObject;
-        private objectIsTile;
-        private getIntersection;
-        private getRelativePosition;
-        private mapYToX;
+    import fudge = FudgeCore;
+    class Camera {
+        cmp: fudge.ComponentCamera;
+        constructor(x: number, y: number, z: number, viewport: fudge.Viewport);
+        get position(): fudge.Vector3;
+        set position(_position: fudge.Vector3);
+        follow(target: Character): void;
     }
 }
 declare namespace Script {
@@ -67,10 +46,35 @@ declare namespace Script {
     class Sonic {
         private _character;
         constructor(viewport: FudgeCore.Viewport);
+        get character(): Character;
         update(): void;
         jump(): void;
         move(_direction: Direction): void;
         stop(): void;
+    }
+}
+declare namespace Script {
+    class BoundingBox {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        _origin: FudgeCore.ORIGIN2D;
+        constructor(_x: number, _y: number, _width: number, _height: number, _origin: FudgeCore.ORIGIN2D);
+        get top(): number;
+        get bottom(): number;
+        get left(): number;
+        get right(): number;
+    }
+}
+declare namespace Script {
+    class CollisionChecker {
+        checkCollision(a: CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
+        private getRectFromObject;
+        private objectIsTile;
+        private getIntersection;
+        private getRelativePosition;
+        private mapYToX;
     }
 }
 declare namespace Script {

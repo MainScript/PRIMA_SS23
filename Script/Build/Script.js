@@ -1,19 +1,6 @@
 "use strict";
 var Script;
 (function (Script) {
-    var fudge = FudgeCore;
-    class Camera {
-        cmp;
-        constructor(x, y, z, viewport) {
-            this.cmp = viewport.getBranch().getComponent(fudge.ComponentCamera);
-            this.cmp.mtxPivot.translate(new fudge.Vector3(x, y, z));
-            this.cmp.mtxPivot.rotateY(180);
-        }
-    }
-    Script.Camera = Camera;
-})(Script || (Script = {}));
-var Script;
-(function (Script) {
     var ƒ = FudgeCore;
     ƒ.Project.registerScriptNamespace(Script); // Register the namespace to FUDGE for serialization
     class CustomComponentScript extends ƒ.ComponentScript {
@@ -55,11 +42,12 @@ var Script;
     fudge.Debug.info("Main Program Template running!");
     let viewport;
     let sonic;
+    let viewCamera;
     document.addEventListener("interactiveViewportStarted", start);
     function start(_event) {
         viewport = _event.detail;
-        let cmpCamera = new Script.Camera(3, 1, 6, viewport);
-        viewport.camera = cmpCamera.cmp;
+        viewCamera = new Script.Camera(3, 1, 6, viewport);
+        viewport.camera = viewCamera.cmp;
         sonic = new Script.Sonic(viewport);
         fudge.Loop.addEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
         fudge.Loop.start();
@@ -77,6 +65,8 @@ var Script;
                 sonic.jump();
             }
             sonic.update();
+            viewCamera.follow(sonic.character);
+            console.log(viewCamera.position);
         }
         // if space is pressed, stop the loop
         if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.SPACE])) {
@@ -85,6 +75,149 @@ var Script;
         }
         viewport.draw();
     }
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    var fudge = FudgeCore;
+    class Camera {
+        cmp;
+        constructor(x, y, z, viewport) {
+            this.cmp = viewport.getBranch().getComponent(fudge.ComponentCamera);
+            this.cmp.mtxPivot.translate(new fudge.Vector3(x, y, z));
+            this.cmp.mtxPivot.rotateY(180);
+        }
+        get position() {
+            return this.cmp.mtxPivot.translation;
+        }
+        set position(_position) {
+            this.cmp.mtxPivot.translation = _position;
+        }
+        follow(target) {
+            let vector = new fudge.Vector3(target.position.x, target.position.y + 1, this.position.z);
+            this.position = vector;
+        }
+    }
+    Script.Camera = Camera;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    class Character {
+        _acceleration = FudgeCore.Vector2.ZERO();
+        _cmp;
+        _definition;
+        _position;
+        _velocity = FudgeCore.Vector2.ZERO();
+        _viewport;
+        _intersection = null;
+        constructor(_definition, viewport) {
+            this._definition = _definition;
+            this._cmp = viewport.getBranch().getChildrenByName(_definition.name)[0];
+            this._position = this._cmp.cmpTransform.mtxLocal.translation;
+            this._viewport = viewport;
+        }
+        get position() {
+            return this._position;
+        }
+        set acceleration(_acceleration) {
+            this._acceleration = _acceleration;
+        }
+        get acceleration() {
+            return this._acceleration;
+        }
+        get collision() {
+            return this._intersection;
+        }
+        applyGravity() {
+            if (this._intersection) {
+                this._acceleration.y = 0;
+                return;
+            }
+            this._acceleration.y = Script.GRAVITY;
+        }
+        get velocity() {
+            return this._velocity;
+        }
+        updateVelocity() {
+            this._velocity.add(this._acceleration);
+            if (this._intersection) {
+                this._velocity.y = Math.max(this._velocity.y, 0);
+            }
+            this._acceleration = FudgeCore.Vector2.ZERO();
+            if (this._velocity.x > this._definition.terminalVelocity.x) {
+                this._velocity.x = this._definition.terminalVelocity.x;
+            }
+            else if (this._velocity.x < -this._definition.terminalVelocity.x) {
+                this._velocity.x = -this._definition.terminalVelocity.x;
+            }
+            if (this._velocity.y > this._definition.terminalVelocity.y) {
+                this._velocity.y = this._definition.terminalVelocity.y;
+            }
+            else if (this._velocity.y < -this._definition.terminalVelocity.y) {
+                this._velocity.y = -this._definition.terminalVelocity.y;
+            }
+        }
+        updatePosition() {
+            this._position.add(this._velocity.toVector3());
+            if (this._intersection && this.position.y - Script.GRAVITY < this._intersection.top) {
+                this._position.y = this._intersection.top;
+            }
+            this._cmp.mtxLocal.translation = this._position;
+        }
+        applyForce(_force) {
+            this._acceleration.add(_force);
+        }
+        applyImpulse(_impulse) {
+            this._velocity.add(_impulse);
+        }
+        checkCollision() {
+            const collisionChecker = new Script.CollisionChecker();
+            const collisions = Script.collidables.map((def) => {
+                return this._viewport.getBranch().getChildrenByName("Terrain")[0].getChildrenByName(def.name).map((node) => ({ cmp: node, definition: def }));
+            }).reduce((a, b) => a.concat(b), []).map((floor) => {
+                return collisionChecker.checkCollision({ cmp: this._cmp, definition: this._definition }, floor);
+            }).filter((intersection) => {
+                return intersection !== null;
+            });
+            if (collisions.length > 0) {
+                this._intersection = collisions.reduce((a, b) => {
+                    return a.height > b.height ? a : b;
+                });
+                return;
+            }
+            this._intersection = null;
+        }
+    }
+    Script.Character = Character;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
+    class Sonic {
+        _character;
+        constructor(viewport) {
+            this._character = new Script.Character(Script.defSonic, viewport);
+        }
+        get character() {
+            return this._character;
+        }
+        update() {
+            this._character.checkCollision();
+            this._character.applyGravity();
+            this._character.updateVelocity();
+            this._character.updatePosition();
+        }
+        jump() {
+            if (this._character.collision) {
+                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
+            }
+        }
+        move(_direction) {
+            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveForce, 0));
+        }
+        stop() {
+            this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / Script.defSonic.framesToStop, 0));
+        }
+    }
+    Script.Sonic = Sonic;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
@@ -187,123 +320,6 @@ var Script;
         }
     }
     Script.CollisionChecker = CollisionChecker;
-})(Script || (Script = {}));
-var Script;
-(function (Script) {
-    class Character {
-        _acceleration = FudgeCore.Vector2.ZERO();
-        _cmp;
-        _definition;
-        _position;
-        _velocity = FudgeCore.Vector2.ZERO();
-        _viewport;
-        _intersection = null;
-        constructor(_definition, viewport) {
-            this._definition = _definition;
-            this._cmp = viewport.getBranch().getChildrenByName(_definition.name)[0];
-            this._position = this._cmp.cmpTransform.mtxLocal.translation;
-            this._viewport = viewport;
-        }
-        get position() {
-            return this._position;
-        }
-        set acceleration(_acceleration) {
-            this._acceleration = _acceleration;
-        }
-        get acceleration() {
-            return this._acceleration;
-        }
-        get collision() {
-            return this._intersection;
-        }
-        applyGravity() {
-            if (this._intersection) {
-                this._acceleration.y = 0;
-                return;
-            }
-            this._acceleration.y = Script.GRAVITY;
-        }
-        get velocity() {
-            return this._velocity;
-        }
-        updateVelocity() {
-            this._velocity.add(this._acceleration);
-            if (this._intersection) {
-                this._velocity.y = Math.max(this._velocity.y, 0);
-            }
-            this._acceleration = FudgeCore.Vector2.ZERO();
-            if (this._velocity.x > this._definition.terminalVelocity.x) {
-                this._velocity.x = this._definition.terminalVelocity.x;
-            }
-            else if (this._velocity.x < -this._definition.terminalVelocity.x) {
-                this._velocity.x = -this._definition.terminalVelocity.x;
-            }
-            if (this._velocity.y > this._definition.terminalVelocity.y) {
-                this._velocity.y = this._definition.terminalVelocity.y;
-            }
-            else if (this._velocity.y < -this._definition.terminalVelocity.y) {
-                this._velocity.y = -this._definition.terminalVelocity.y;
-            }
-        }
-        updatePosition() {
-            this._position.add(this._velocity.toVector3());
-            if (this._intersection && this.position.y - Script.GRAVITY < this._intersection.top) {
-                this._position.y = this._intersection.top;
-            }
-            this._cmp.mtxLocal.translation = this._position;
-        }
-        applyForce(_force) {
-            this._acceleration.add(_force);
-        }
-        applyImpulse(_impulse) {
-            this._velocity.add(_impulse);
-        }
-        checkCollision() {
-            const collisionChecker = new Script.CollisionChecker();
-            const collisions = Script.collidables.map((def) => {
-                return this._viewport.getBranch().getChildrenByName("Terrain")[0].getChildrenByName(def.name).map((node) => ({ cmp: node, definition: def }));
-            }).reduce((a, b) => a.concat(b), []).map((floor) => {
-                return collisionChecker.checkCollision({ cmp: this._cmp, definition: this._definition }, floor);
-            }).filter((intersection) => {
-                return intersection !== null;
-            });
-            if (collisions.length > 0) {
-                this._intersection = collisions.reduce((a, b) => {
-                    return a.height > b.height ? a : b;
-                });
-                return;
-            }
-            this._intersection = null;
-        }
-    }
-    Script.Character = Character;
-})(Script || (Script = {}));
-var Script;
-(function (Script) {
-    class Sonic {
-        _character;
-        constructor(viewport) {
-            this._character = new Script.Character(Script.defSonic, viewport);
-        }
-        update() {
-            this._character.checkCollision();
-            this._character.applyGravity();
-            this._character.updateVelocity();
-            this._character.updatePosition();
-        }
-        jump() {
-            if (this._character.collision) {
-                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
-            }
-        }
-        move(_direction) {
-            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveForce, 0));
-        }
-        stop() {
-            this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / Script.defSonic.framesToStop, 0));
-        }
-    }
-    Script.Sonic = Sonic;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {

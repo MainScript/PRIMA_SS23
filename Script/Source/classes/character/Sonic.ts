@@ -4,6 +4,11 @@ namespace Script {
     constructor(viewport: FudgeCore.Viewport) {
       this._character = new Character(defSonic, viewport);
     }
+
+    public get character(): Character {
+      return this._character;
+    }
+
     public update(): void {
       this._character.checkCollision();
       this._character.applyGravity();
