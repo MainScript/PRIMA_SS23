@@ -1,9 +1,9 @@
 namespace Script {
   export const defFloorStraight4x1: TileDefinition = {
-    name: "FloorStraight4x1a",
+    name: "FloorStraight4x1",
     width: 4,
     height: 1,
-    XYMapping: (x) => x,
+    slopeMapping: () => 1,
     origin: FudgeCore.ORIGIN2D.TOPLEFT
   };
 
@@ -11,12 +11,12 @@ namespace Script {
     name: "RampUpFull",
     width: 2.5,
     height: 2,
-    XYMapping: (x) => 2/2.5 * x,
-    origin: FudgeCore.ORIGIN2D.BOTTOMRIGHT
+    slopeMapping: (x) => 0.75 * x,
+    origin: FudgeCore.ORIGIN2D.BOTTOMLEFT
   };
 
   export const collidables: TileDefinition[] = [
     defFloorStraight4x1,
-    // defRampUpFull
+    defRampUpFull
   ];
 }

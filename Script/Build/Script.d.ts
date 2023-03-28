@@ -32,10 +32,12 @@ declare namespace Script {
 }
 declare namespace Script {
     class CollisionChecker {
-        checkCollision(a: Tile | CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
+        checkCollision(a: CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
         private getRectFromObject;
         private objectIsTile;
         private getIntersection;
+        private getRelativePosition;
+        private mapYToX;
     }
 }
 declare namespace Script {
@@ -48,9 +50,10 @@ declare namespace Script {
         private _viewport;
         private _intersection;
         constructor(_definition: CharacterDefinition, viewport: FudgeCore.Viewport);
+        get position(): FudgeCore.Vector3;
         set acceleration(_acceleration: FudgeCore.Vector2);
         get acceleration(): FudgeCore.Vector2;
-        get collision(): boolean;
+        get collision(): BoundingBox;
         applyGravity(): void;
         get velocity(): FudgeCore.Vector2;
         updateVelocity(): void;
@@ -109,7 +112,7 @@ declare namespace Script {
         origin: FudgeCore.ORIGIN2D;
     }
     interface TileDefinition extends SpriteDefinition {
-        XYMapping: (x: number) => number;
+        slopeMapping: (x: number) => number;
     }
     interface Sprite {
         cmp: FudgeCore.Node;

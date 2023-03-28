@@ -7,7 +7,7 @@ namespace Script {
   }
   
   export interface TileDefinition extends SpriteDefinition {
-    XYMapping: (x: number) => number;
+    slopeMapping: (x: number) => number;
   }
 
   export interface Sprite {

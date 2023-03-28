@@ -18,6 +18,7 @@ namespace Script {
         case 0x00: return this.y;
         case 0x10: return this.y + this.height / 2;
         case 0x20: return this.y + this.height;
+        default: return this.y;
       }
     }
 
@@ -26,6 +27,7 @@ namespace Script {
         case 0x00: return this.y - this.height;
         case 0x10: return this.y - this.height / 2;
         case 0x20: return this.y;
+        default: return this.y;
       }
     }
 
@@ -34,6 +36,7 @@ namespace Script {
         case 0x00: return this.x;
         case 0x01: return this.x - this.width / 2;
         case 0x02: return this.x - this.width;
+        default: return this.x;
       }
     }
 
@@ -42,6 +45,7 @@ namespace Script {
         case 0x00: return this.x + this.width;
         case 0x01: return this.x + this.width / 2;
         case 0x02: return this.x;
+        default: return this.x;
       }
     }
   }
