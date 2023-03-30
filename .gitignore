@@ -1,2 +1,4 @@
 *.tsbuildinfo
 Script/Build
+node_modules
+*-lock.json

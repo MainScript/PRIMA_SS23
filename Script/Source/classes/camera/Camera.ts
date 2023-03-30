@@ -18,7 +18,7 @@ namespace Script {
         }
 
         public follow(target: Character): void {
-            let vector: fudge.Vector3 = new fudge.Vector3(target.position.x, target.position.y + 1, this.position.z);
+            const vector: fudge.Vector3 = new fudge.Vector3(target.position.x, target.position.y + 1, this.position.z);
             this.position = vector;
         }
     }
