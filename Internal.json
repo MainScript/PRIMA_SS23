@@ -159,22 +159,34 @@
       }
     }
   },
-  "MeshSprite|2023-03-27T15:06:25.373Z|64464": {
+  "MeshSprite|2023-03-30T09:09:07.069Z|63114": {
     "ƒ.MeshSprite": {
-      "idResource": "MeshSprite|2023-03-27T15:06:25.373Z|64464",
-      "name": "MeshSprite",
+      "idResource": "MeshSprite|2023-03-30T09:09:07.069Z|63114",
+      "name": "Sonic",
       "type": "MeshSprite"
     }
   },
-  "Material|2023-03-27T15:07:53.911Z|75161": {
+  "Material|2023-03-30T09:09:23.508Z|29132": {
     "ƒ.Material": {
-      "name": "ShaderLitTextured",
-      "idResource": "Material|2023-03-27T15:07:53.911Z|75161",
+      "name": "texSonic",
+      "idResource": "Material|2023-03-30T09:09:23.508Z|29132",
       "shader": "ShaderLitTextured",
       "coat": {
         "ƒ.CoatTextured": {
-          "color": "[1, 1, 1, 1]"
+          "color": "[1, 1, 1, 1]",
+          "idTexture": "TextureImage|2023-03-30T09:11:24.858Z|34758"
         }
+      }
+    }
+  },
+  "TextureImage|2023-03-30T09:11:24.858Z|34758": {
+    "ƒ.TextureImage": {
+      "url": "Assets\\Textures\\sonic_sprites_normalized.png",
+      "type": "TextureImage",
+      "Texture": {
+        "idResource": "TextureImage|2023-03-30T09:11:24.858Z|34758",
+        "name": "Assets\\Textures\\sonic_sprites_normalized.png",
+        "mipmap": "CRISP"
       }
     }
   },
@@ -1618,23 +1630,9 @@
               "ComponentMesh": [
                 {
                   "ƒ.ComponentMesh": {
-                    "idMesh": "MeshSprite|2023-03-27T15:06:25.373Z|64464",
+                    "idMesh": "MeshSprite|2023-03-30T09:09:07.069Z|63114",
                     "pivot": {
                       "translation": "[-0.5, 0.5, 0]",
-                      "rotation": "[0, 0, 0]",
-                      "scaling": "[1, 1, 1]"
-                    },
-                    "Component": {
-                      "active": true
-                    }
-                  }
-                }
-              ],
-              "ComponentTransform": [
-                {
-                  "ƒ.ComponentTransform": {
-                    "local": {
-                      "translation": "[1.0000009536743164, 0, 0]",
                       "rotation": "[0, 0, 0]",
                       "scaling": "[1, 1, 1]"
                     },
@@ -1651,14 +1649,28 @@
                     "clrPrimary": "[1, 1, 1, 1]",
                     "clrSecondary": "[1, 1, 1, 1]",
                     "pivot": {
-                      "translation": "[0, 0]",
+                      "translation": "[0.20000001788139343, 0.10000000149011612]",
                       "rotation": 0,
-                      "scaling": "[1, 1]"
+                      "scaling": "[0.10000000149011612, 0.10000000149011612]"
                     },
                     "Component": {
                       "active": true
                     },
-                    "idMaterial": "Material|2023-03-27T15:07:53.911Z|75161"
+                    "idMaterial": "Material|2023-03-30T09:09:23.508Z|29132"
+                  }
+                }
+              ],
+              "ComponentTransform": [
+                {
+                  "ƒ.ComponentTransform": {
+                    "local": {
+                      "translation": "[1, 0, 0]",
+                      "rotation": "[0, 0, 0]",
+                      "scaling": "[1, 1, 1]"
+                    },
+                    "Component": {
+                      "active": true
+                    }
                   }
                 }
               ]
