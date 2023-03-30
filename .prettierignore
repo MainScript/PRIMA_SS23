@@ -3,3 +3,5 @@ Script/Build
 node_modules
 *-lock.json
 Script/Source/@types
+*.yaml
+*.yml
