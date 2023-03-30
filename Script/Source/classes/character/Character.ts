@@ -80,13 +80,21 @@ namespace Script {
 
         public checkCollision(): void {
             const collisionChecker = new CollisionChecker();
-            const collisions = collidables.map((def): Tile[] => {
-                return this._viewport.getBranch().getChildrenByName("Terrain")[0].getChildrenByName(def.name).map((node) => ({cmp: node, definition: def}));
-            }).reduce((a, b) => a.concat(b), []).map((floor) => {
-                return collisionChecker.checkCollision({cmp: this._cmp, definition: this._definition}, floor);
-            }).filter((intersection) => {
-                return intersection !== null;
-            });
+            const collisions = collidables
+                .map((def): Tile[] => {
+                    return this._viewport
+                        .getBranch()
+                        .getChildrenByName('Terrain')[0]
+                        .getChildrenByName(def.name)
+                        .map((node) => ({ cmp: node, definition: def }));
+                })
+                .reduce((a, b) => a.concat(b), [])
+                .map((floor) => {
+                    return collisionChecker.checkCollision({ cmp: this._cmp, definition: this._definition }, floor);
+                })
+                .filter((intersection) => {
+                    return intersection !== null;
+                });
 
             if (collisions.length > 0) {
                 this._intersection = collisions.reduce((a, b) => {

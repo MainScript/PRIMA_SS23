@@ -1,11 +1,16 @@
 {
     "scripts": {
         "build": "tsc -p Script/Source/tsconfig.json",
-        "watch": "tsc -w -p Script/Source/tsconfig.json"
+        "watch": "tsc -w -p Script/Source/tsconfig.json",
+        "prettier": "prettier --write Script/Source/**/*.ts",
+        "lint": "eslint Script/Source/**/*.ts",
+        "lint:fix": "eslint Script/Source/**/*.ts --fix"
     },
     "devDependencies": {
         "@typescript-eslint/eslint-plugin": "^5.57.0",
         "@typescript-eslint/parser": "^5.57.0",
-        "eslint": "^8.37.0"
+        "eslint": "^8.37.0",
+        "eslint-config-prettier": "^8.8.0",
+        "prettier": "2.8.7"
     }
 }
