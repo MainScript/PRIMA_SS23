@@ -2,5 +2,10 @@
     "scripts": {
         "build": "tsc -p Script/Source/tsconfig.json",
         "watch": "tsc -w -p Script/Source/tsconfig.json"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^5.57.0",
+        "@typescript-eslint/parser": "^5.57.0",
+        "eslint": "^8.37.0"
     }
 }
