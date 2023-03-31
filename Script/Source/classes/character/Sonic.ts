@@ -12,9 +12,10 @@ namespace Script {
 
         public update(_timeDeltaSeconds: number): void {
             const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
-            this._collision = this._character.checkCollision(_clone, _timeDeltaSeconds);
+            _clone.reset();
+            this._collision = _clone.checkCollision(_clone, _timeDeltaSeconds);
             this._character.applyGravity(_timeDeltaSeconds, this._collision);
-            this._character.updateVelocity(this._collision);
+            this._character.updateVelocity(_timeDeltaSeconds, this._collision);
             this._character.updatePosition(this._collision);
         }
 
@@ -25,7 +26,9 @@ namespace Script {
         }
 
         public move(_direction: Direction, _timeDeltaSeconds: number): void {
-            this._character.applyForce(new FudgeCore.Vector2(_direction * defSonic.moveForce * _timeDeltaSeconds, 0));
+            this._character.applyForce(
+                new FudgeCore.Vector2(_direction * defSonic.moveAcceleration * _timeDeltaSeconds, 0)
+            );
         }
 
         public stop(): void {
