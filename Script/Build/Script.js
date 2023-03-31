@@ -7,7 +7,7 @@ var Script;
         // Register the script as component for use in the editor via drag&drop
         static iSubclass = ƒ.Component.registerSubclass(CustomComponentScript);
         // Properties may be mutated by users in the editor via the automatically created user interface
-        message = "CustomComponentScript added to ";
+        message = 'CustomComponentScript added to ';
         constructor() {
             super();
             // Don't start when running in editor
@@ -36,14 +36,16 @@ var Script;
     }
     Script.CustomComponentScript = CustomComponentScript;
 })(Script || (Script = {}));
+/* eslint-disable no-inner-declarations */
 var Script;
+/* eslint-disable no-inner-declarations */
 (function (Script) {
     var fudge = FudgeCore;
-    fudge.Debug.info("Main Program Template running!");
+    fudge.Debug.info('Main Program Template running!');
     let viewport;
     let sonic;
     let viewCamera;
-    document.addEventListener("interactiveViewportStarted", start);
+    document.addEventListener('interactiveViewportStarted', start);
     function start(_event) {
         viewport = _event.detail;
         viewCamera = new Script.Camera(3, 1, 6, viewport);
@@ -66,12 +68,11 @@ var Script;
             }
             sonic.update();
             viewCamera.follow(sonic.character);
-            console.log(viewCamera.position);
         }
         // if space is pressed, stop the loop
         if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.SPACE])) {
             fudge.Loop.removeEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
-            console.log("Loop stopped");
+            console.log('Loop stopped');
         }
         viewport.draw();
     }
@@ -93,7 +94,7 @@ var Script;
             this.cmp.mtxPivot.translation = _position;
         }
         follow(target) {
-            let vector = new fudge.Vector3(target.position.x, target.position.y + 1, this.position.z);
+            const vector = new fudge.Vector3(target.position.x, target.position.y + 1, this.position.z);
             this.position = vector;
         }
     }
@@ -108,7 +109,6 @@ var Script;
         _position;
         _velocity = FudgeCore.Vector2.ZERO();
         _viewport;
-        _intersection = null;
         constructor(_definition, viewport) {
             this._definition = _definition;
             this._cmp = viewport.getBranch().getChildrenByName(_definition.name)[0];
@@ -124,23 +124,18 @@ var Script;
         get acceleration() {
             return this._acceleration;
         }
-        get collision() {
-            return this._intersection;
-        }
-        applyGravity() {
-            if (this._intersection) {
-                this._acceleration.y = 0;
-                return;
+        applyGravity(_intersection) {
+            if (!_intersection) {
+                this._acceleration.y = Script.GRAVITY;
             }
-            this._acceleration.y = Script.GRAVITY;
         }
         get velocity() {
             return this._velocity;
         }
-        updateVelocity() {
+        updateVelocity(_intersection) {
             this._velocity.add(this._acceleration);
-            if (this._intersection) {
-                this._velocity.y = Math.max(this._velocity.y, 0);
+            if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
+                this._velocity.y = 0;
             }
             this._acceleration = FudgeCore.Vector2.ZERO();
             if (this._velocity.x > this._definition.terminalVelocity.x) {
@@ -156,10 +151,10 @@ var Script;
                 this._velocity.y = -this._definition.terminalVelocity.y;
             }
         }
-        updatePosition() {
+        updatePosition(_intersection) {
             this._position.add(this._velocity.toVector3());
-            if (this._intersection && this.position.y - Script.GRAVITY < this._intersection.top) {
-                this._position.y = this._intersection.top;
+            if (_intersection && this._position.y < _intersection.top) {
+                this._position.y = _intersection.top;
             }
             this._cmp.mtxLocal.translation = this._position;
         }
@@ -169,22 +164,35 @@ var Script;
         applyImpulse(_impulse) {
             this._velocity.add(_impulse);
         }
-        checkCollision() {
+        checkCollision(_char) {
+            _char.applyGravity();
+            _char.updateVelocity();
+            _char.updatePosition();
             const collisionChecker = new Script.CollisionChecker();
-            const collisions = Script.collidables.map((def) => {
-                return this._viewport.getBranch().getChildrenByName("Terrain")[0].getChildrenByName(def.name).map((node) => ({ cmp: node, definition: def }));
-            }).reduce((a, b) => a.concat(b), []).map((floor) => {
-                return collisionChecker.checkCollision({ cmp: this._cmp, definition: this._definition }, floor);
-            }).filter((intersection) => {
-                return intersection !== null;
+            const tilesToCollideWith = Script.getAllMeshesInNode(this._viewport.getBranch().getChildrenByName('Terrain')[0])
+                .filter((component) => Script.collidables.map((def) => def.name).includes(component.mesh.name))
+                .map((component) => {
+                return {
+                    translation: component.mtxWorld.translation,
+                    definition: Script.collidables.find((def) => def.name === component.mesh.name),
+                };
             });
-            if (collisions.length > 0) {
-                this._intersection = collisions.reduce((a, b) => {
-                    return a.height > b.height ? a : b;
-                });
-                return;
-            }
-            this._intersection = null;
+            return tilesToCollideWith
+                .map((tile) => {
+                return collisionChecker.checkCollision({
+                    translation: _char.position,
+                    definition: _char._definition,
+                }, tile);
+            })
+                .filter((intersection) => intersection !== null)
+                .sort((a, b) => {
+                return this.compareDistances(a.position, b.position);
+            })[0];
+        }
+        compareDistances(a, b) {
+            const distanceA = (this._position.x - a.x) ** 2 + (this._position.y - a.y) ** 2;
+            const distanceB = (this._position.x - b.x) ** 2 + (this._position.y - b.y) ** 2;
+            return distanceA > distanceB ? 1 : -1;
         }
     }
     Script.Character = Character;
@@ -193,6 +201,7 @@ var Script;
 (function (Script) {
     class Sonic {
         _character;
+        _collision;
         constructor(viewport) {
             this._character = new Script.Character(Script.defSonic, viewport);
         }
@@ -200,13 +209,14 @@ var Script;
             return this._character;
         }
         update() {
-            this._character.checkCollision();
-            this._character.applyGravity();
-            this._character.updateVelocity();
-            this._character.updatePosition();
+            const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
+            this._collision = this._character.checkCollision(_clone);
+            this._character.applyGravity(this._collision);
+            this._character.updateVelocity(this._collision);
+            this._character.updatePosition(this._collision);
         }
         jump() {
-            if (this._character.collision) {
+            if (this._collision) {
                 this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
             }
         }
@@ -227,44 +237,85 @@ var Script;
         width;
         height;
         _origin;
-        constructor(_x, _y, _width, _height, _origin) {
-            this.x = _x;
-            this.y = _y;
-            this.width = _width;
-            this.height = _height;
+        constructor(_translation, _size, _origin) {
+            // round every number to 3 decimal places
+            this.x = Math.round(_translation.x * 1000) / 1000;
+            this.y = Math.round(_translation.y * 1000) / 1000;
+            this.width = Math.round(_size.x * 1000) / 1000;
+            this.height = Math.round(_size.y * 1000) / 1000;
             this._origin = _origin;
+        }
+        isInside(_point) {
+            return this.left <= _point.x && this.right >= _point.x && this.top >= _point.y && this.bottom <= _point.y;
         }
         get top() {
             switch (this._origin & 0x30) {
-                case 0x00: return this.y;
-                case 0x10: return this.y + this.height / 2;
-                case 0x20: return this.y + this.height;
-                default: return this.y;
+                case 0x00:
+                    return this.y;
+                case 0x10:
+                    return this.y + this.height / 2;
+                case 0x20:
+                    return this.y + this.height;
+                default:
+                    return this.y;
             }
         }
         get bottom() {
             switch (this._origin & 0x30) {
-                case 0x00: return this.y - this.height;
-                case 0x10: return this.y - this.height / 2;
-                case 0x20: return this.y;
-                default: return this.y;
+                case 0x00:
+                    return this.y - this.height;
+                case 0x10:
+                    return this.y - this.height / 2;
+                case 0x20:
+                    return this.y;
+                default:
+                    return this.y;
             }
         }
         get left() {
             switch (this._origin & 0x03) {
-                case 0x00: return this.x;
-                case 0x01: return this.x - this.width / 2;
-                case 0x02: return this.x - this.width;
-                default: return this.x;
+                case 0x00:
+                    return this.x;
+                case 0x01:
+                    return this.x - this.width / 2;
+                case 0x02:
+                    return this.x - this.width;
+                default:
+                    return this.x;
             }
         }
         get right() {
             switch (this._origin & 0x03) {
-                case 0x00: return this.x + this.width;
-                case 0x01: return this.x + this.width / 2;
-                case 0x02: return this.x;
-                default: return this.x;
+                case 0x00:
+                    return this.x + this.width;
+                case 0x01:
+                    return this.x + this.width / 2;
+                case 0x02:
+                    return this.x;
+                default:
+                    return this.x;
             }
+        }
+        getIntersection(other) {
+            if (this.right < other.left ||
+                this.left > other.right ||
+                this.top < other.bottom ||
+                this.bottom > other.top) {
+                return null;
+            }
+            const x = Math.max(this.left, other.left);
+            const right = Math.min(this.right, other.right);
+            const width = Math.abs(right - x);
+            const y = Math.max(this.bottom, other.bottom);
+            const top = Math.min(this.top, other.top);
+            const height = Math.abs(top - y);
+            if (width > 0 && height > 0) {
+                return new BoundingBox(new FudgeCore.Vector2(x, y), new FudgeCore.Vector2(width, height), FudgeCore.ORIGIN2D.CENTER);
+            }
+            return null;
+        }
+        get position() {
+            return new FudgeCore.Vector2(this.x, this.y);
         }
     }
     Script.BoundingBox = BoundingBox;
@@ -272,66 +323,63 @@ var Script;
 var Script;
 (function (Script) {
     class CollisionChecker {
-        checkCollision(a, b) {
-            let rectA = this.getRectFromObject(a);
-            let rectB = this.getRectFromObject(b);
-            let intersection = this.getIntersection(rectA, rectB);
-            if (this.objectIsTile(b) && intersection) {
-                let relativePosition = this.getRelativePosition(rectA, rectB);
-                const mappedY = this.mapYToX(b, rectB, relativePosition.x);
-                intersection.y = rectB.bottom;
-                intersection.height = mappedY;
-                if (relativePosition.x < 0 || relativePosition.x > 1) {
-                    intersection = null;
+        checkCollision(object1, object2) {
+            const rect2 = this.getRectangle(object2.translation.toVector2(), new FudgeCore.Vector2(object2.definition.width, object2.definition.height), object2.definition.origin);
+            const _t = rect2.isInside(object1.translation.toVector2());
+            if (_t) {
+                const intersection = rect2.getIntersection(new Script.BoundingBox(object1.translation.toVector2(), new FudgeCore.Vector2(object1.definition.width, object1.definition.height), object1.definition.origin));
+                if (!intersection)
+                    return null;
+                let _returnHeight = intersection.height;
+                if (this.objectIsTile(object2)) {
+                    _returnHeight = this.mapXToAbsoluteYUsingSlope(object1.translation.x, object2);
                 }
-                if (rectA.y > this.mapYToX(b, rectB, relativePosition.x)) {
-                    intersection = null;
-                }
-            }
-            return intersection;
-        }
-        getRectFromObject(object) {
-            return new Script.BoundingBox(object.cmp.cmpTransform.mtxLocal.translation.x, object.cmp.cmpTransform.mtxLocal.translation.y, object.definition.width, object.definition.height, object.definition.origin);
-        }
-        objectIsTile(object) {
-            return object.definition.slopeMapping !== undefined;
-        }
-        getIntersection(a, b) {
-            if (a.right < b.left || a.left > b.right || a.top < b.bottom || a.bottom > b.top) {
-                return null;
-            }
-            let x = Math.max(a.left, b.left);
-            let right = Math.min(a.right, b.right);
-            let width = Math.abs(right - x);
-            let y = Math.max(a.bottom, b.bottom);
-            let top = Math.min(a.top, b.top);
-            let height = Math.abs(top - y);
-            if (width > 0 && height > 0) {
-                return new Script.BoundingBox(x, y, width, height, FudgeCore.ORIGIN2D.BOTTOMLEFT);
+                return this.getRectangle(new FudgeCore.Vector2(object1.translation.x, rect2.bottom), new FudgeCore.Vector2(intersection.width, _returnHeight), FudgeCore.ORIGIN2D.BOTTOMCENTER);
             }
             return null;
         }
-        getRelativePosition(a, b) {
-            let relativePosition = new FudgeCore.Vector2((a.x - b.left) / b.width, (a.y - b.bottom) / b.height);
-            return relativePosition;
+        getRectangle(_translation, _scale, _origin) {
+            return new Script.BoundingBox(_translation, _scale, _origin);
         }
-        mapYToX(target, targetRect, x) {
-            return (target.definition.slopeMapping(x) / targetRect.height) * targetRect.top;
+        mapXToAbsoluteYUsingSlope(_absoluteX, _tile) {
+            const tileRect = this.getRectangle(_tile.translation.toVector2(), new FudgeCore.Vector2(_tile.definition.width, _tile.definition.height), _tile.definition.origin);
+            const y = _tile.definition.slopeMapping(this.getRelativeX(_absoluteX, tileRect));
+            return y * _tile.definition.height;
+        }
+        getRelativeX(_absoluteX, _tileRect) {
+            return (_absoluteX - _tileRect.left) / _tileRect.width;
+        }
+        objectIsTile(object) {
+            return object.definition.slopeMapping !== undefined;
         }
     }
     Script.CollisionChecker = CollisionChecker;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
+    function getAllMeshesInNode(_node) {
+        let meshes = [];
+        for (const child of _node.getChildren()) {
+            if (child.getComponent(FudgeCore.ComponentMesh)) {
+                meshes.push(child.getComponent(FudgeCore.ComponentMesh));
+            }
+            meshes = meshes.concat(getAllMeshesInNode(child));
+        }
+        return meshes;
+    }
+    Script.getAllMeshesInNode = getAllMeshesInNode;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
     Script.defSonic = {
-        name: "Sonic",
+        name: 'Sonic',
         height: 1,
         terminalVelocity: new FudgeCore.Vector2(0.05, 0.15),
         width: 1,
         jumpImpulse: 0.25,
         moveForce: 0.0025,
         framesToStop: 20,
-        origin: FudgeCore.ORIGIN2D.BOTTOMCENTER
+        origin: FudgeCore.ORIGIN2D.BOTTOMCENTER,
     };
 })(Script || (Script = {}));
 var Script;
@@ -349,22 +397,19 @@ var Script;
 var Script;
 (function (Script) {
     Script.defFloorStraight4x1 = {
-        name: "FloorStraight4x1",
-        width: 4,
+        name: 'FloorStraight',
+        width: 1,
         height: 1,
         slopeMapping: () => 1,
-        origin: FudgeCore.ORIGIN2D.TOPLEFT
+        origin: FudgeCore.ORIGIN2D.CENTER,
     };
     Script.defRampUpFull = {
-        name: "RampUpFull",
+        name: 'RampUp',
         width: 2.5,
         height: 2,
-        slopeMapping: (x) => 0.75 * x,
-        origin: FudgeCore.ORIGIN2D.BOTTOMLEFT
+        slopeMapping: (x) => 0.375 * x + 0.625,
+        origin: FudgeCore.ORIGIN2D.CENTER,
     };
-    Script.collidables = [
-        Script.defFloorStraight4x1,
-        Script.defRampUpFull
-    ];
+    Script.collidables = [Script.defFloorStraight4x1, Script.defRampUpFull];
 })(Script || (Script = {}));
 //# sourceMappingURL=Script.js.map

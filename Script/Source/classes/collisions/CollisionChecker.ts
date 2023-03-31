@@ -1,64 +1,58 @@
 namespace Script {
     export class CollisionChecker {
-        public checkCollision(a: CharacterSprite, b: Tile | CharacterSprite): BoundingBox {
-            const rectA: BoundingBox = this.getRectFromObject(a);
-            const rectB: BoundingBox = this.getRectFromObject(b);
-            let intersection: BoundingBox = this.getIntersection(rectA, rectB);
-            if (this.objectIsTile(b) && intersection) {
-                const relativePosition: FudgeCore.Vector2 = this.getRelativePosition(rectA, rectB);
-                const mappedY = this.mapYToX(b, rectB, relativePosition.x);
-                intersection.y = rectB.bottom;
-                intersection.height = mappedY;
-                if (relativePosition.x < 0 || relativePosition.x > 1) {
-                    intersection = null;
-                }
-                if (rectA.y > this.mapYToX(b, rectB, relativePosition.x)) {
-                    intersection = null;
-                }
-            }
-            return intersection;
-        }
-
-        private getRectFromObject(object: Tile | CharacterSprite): BoundingBox {
-            return new BoundingBox(
-                object.cmp.cmpTransform.mtxLocal.translation.x,
-                object.cmp.cmpTransform.mtxLocal.translation.y,
-                object.definition.width,
-                object.definition.height,
-                object.definition.origin
+        public checkCollision(object1: CharacterSprite, object2: CharacterSprite | Tile) {
+            const rect2 = this.getRectangle(
+                object2.translation.toVector2(),
+                new FudgeCore.Vector2(object2.definition.width, object2.definition.height),
+                object2.definition.origin
             );
-        }
-
-        private objectIsTile(object: Tile | CharacterSprite): object is Tile {
-            return (object as Tile).definition.slopeMapping !== undefined;
-        }
-
-        private getIntersection(a: BoundingBox, b: BoundingBox): BoundingBox {
-            if (a.right < b.left || a.left > b.right || a.top < b.bottom || a.bottom > b.top) {
-                return null;
-            }
-            const x: number = Math.max(a.left, b.left);
-            const right = Math.min(a.right, b.right);
-            const width: number = Math.abs(right - x);
-            const y: number = Math.max(a.bottom, b.bottom);
-            const top = Math.min(a.top, b.top);
-            const height: number = Math.abs(top - y);
-            if (width > 0 && height > 0) {
-                return new BoundingBox(x, y, width, height, FudgeCore.ORIGIN2D.BOTTOMLEFT);
+            const _t = rect2.isInside(object1.translation.toVector2());
+            if (_t) {
+                const intersection = rect2.getIntersection(
+                    new BoundingBox(
+                        object1.translation.toVector2(),
+                        new FudgeCore.Vector2(object1.definition.width, object1.definition.height),
+                        object1.definition.origin
+                    )
+                );
+                if (!intersection) return null;
+                let _returnHeight = intersection.height;
+                if (this.objectIsTile(object2)) {
+                    _returnHeight = this.mapXToAbsoluteYUsingSlope(object1.translation.x, object2);
+                }
+                return this.getRectangle(
+                    new FudgeCore.Vector2(object1.translation.x, rect2.bottom),
+                    new FudgeCore.Vector2(intersection.width, _returnHeight),
+                    FudgeCore.ORIGIN2D.BOTTOMCENTER
+                );
             }
             return null;
         }
 
-        private getRelativePosition(a: BoundingBox, b: BoundingBox): FudgeCore.Vector2 {
-            const relativePosition: FudgeCore.Vector2 = new FudgeCore.Vector2(
-                (a.x - b.left) / b.width,
-                (a.y - b.bottom) / b.height
-            );
-            return relativePosition;
+        private getRectangle(
+            _translation: FudgeCore.Vector2,
+            _scale: FudgeCore.Vector2,
+            _origin: FudgeCore.ORIGIN2D
+        ): BoundingBox {
+            return new BoundingBox(_translation, _scale, _origin);
         }
 
-        private mapYToX(target: Tile, targetRect: BoundingBox, x: number): number {
-            return (target.definition.slopeMapping(x) / targetRect.height) * targetRect.top;
+        private mapXToAbsoluteYUsingSlope(_absoluteX: number, _tile: Tile): number {
+            const tileRect = this.getRectangle(
+                _tile.translation.toVector2(),
+                new FudgeCore.Vector2(_tile.definition.width, _tile.definition.height),
+                _tile.definition.origin
+            );
+            const y = _tile.definition.slopeMapping(this.getRelativeX(_absoluteX, tileRect));
+            return y * _tile.definition.height;
+        }
+
+        private getRelativeX(_absoluteX: number, _tileRect: BoundingBox): number {
+            return (_absoluteX - _tileRect.left) / _tileRect.width;
+        }
+
+        private objectIsTile(object: Tile | CharacterSprite): object is Tile {
+            return (object as Tile).definition.slopeMapping !== undefined;
         }
     }
 }

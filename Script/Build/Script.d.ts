@@ -27,24 +27,24 @@ declare namespace Script {
         private _position;
         private _velocity;
         private _viewport;
-        private _intersection;
         constructor(_definition: CharacterDefinition, viewport: FudgeCore.Viewport);
         get position(): FudgeCore.Vector3;
         set acceleration(_acceleration: FudgeCore.Vector2);
         get acceleration(): FudgeCore.Vector2;
-        get collision(): BoundingBox;
-        applyGravity(): void;
+        applyGravity(_intersection?: BoundingBox): void;
         get velocity(): FudgeCore.Vector2;
-        updateVelocity(): void;
-        updatePosition(): void;
+        updateVelocity(_intersection?: BoundingBox): void;
+        updatePosition(_intersection?: BoundingBox): void;
         applyForce(_force: FudgeCore.Vector2): void;
         applyImpulse(_impulse: FudgeCore.Vector2): void;
-        checkCollision(): void;
+        checkCollision(_char: Character): BoundingBox;
+        private compareDistances;
     }
 }
 declare namespace Script {
     class Sonic {
         private _character;
+        private _collision;
         constructor(viewport: FudgeCore.Viewport);
         get character(): Character;
         update(): void;
@@ -60,22 +60,27 @@ declare namespace Script {
         width: number;
         height: number;
         _origin: FudgeCore.ORIGIN2D;
-        constructor(_x: number, _y: number, _width: number, _height: number, _origin: FudgeCore.ORIGIN2D);
+        constructor(_translation: FudgeCore.Vector2, _size: FudgeCore.Vector2, _origin: FudgeCore.ORIGIN2D);
+        isInside(_point: FudgeCore.Vector2): boolean;
         get top(): number;
         get bottom(): number;
         get left(): number;
         get right(): number;
+        getIntersection(other: BoundingBox): BoundingBox;
+        get position(): FudgeCore.Vector2;
     }
 }
 declare namespace Script {
     class CollisionChecker {
-        checkCollision(a: CharacterSprite, b: Tile | CharacterSprite): BoundingBox;
-        private getRectFromObject;
+        checkCollision(object1: CharacterSprite, object2: CharacterSprite | Tile): BoundingBox;
+        private getRectangle;
+        private mapXToAbsoluteYUsingSlope;
+        private getRelativeX;
         private objectIsTile;
-        private getIntersection;
-        private getRelativePosition;
-        private mapYToX;
     }
+}
+declare namespace Script {
+    function getAllMeshesInNode(_node: FudgeCore.Node): FudgeCore.ComponentMesh[];
 }
 declare namespace Script {
     const defSonic: PlayableCharacterDefinition;
@@ -96,7 +101,7 @@ declare namespace Script {
 }
 declare namespace Script {
     interface CharacterSprite extends Sprite {
-        cmp: FudgeCore.Node;
+        translation: FudgeCore.Vector3;
         definition: CharacterDefinition;
     }
     interface CharacterDefinition extends SpriteDefinition {
@@ -119,7 +124,7 @@ declare namespace Script {
         slopeMapping: (x: number) => number;
     }
     interface Sprite {
-        cmp: FudgeCore.Node;
+        translation: FudgeCore.Vector3;
         definition: SpriteDefinition;
     }
     interface Tile extends Sprite {

@@ -6,7 +6,6 @@ namespace Script {
         private _position: FudgeCore.Vector3;
         private _velocity: FudgeCore.Vector2 = FudgeCore.Vector2.ZERO();
         private _viewport: FudgeCore.Viewport;
-        private _intersection: BoundingBox = null;
         constructor(_definition: CharacterDefinition, viewport: FudgeCore.Viewport) {
             this._definition = _definition;
             this._cmp = viewport.getBranch().getChildrenByName(_definition.name)[0];
@@ -26,26 +25,20 @@ namespace Script {
             return this._acceleration;
         }
 
-        public get collision(): BoundingBox {
-            return this._intersection;
-        }
-
-        public applyGravity(): void {
-            if (this._intersection) {
-                this._acceleration.y = 0;
-                return;
+        public applyGravity(_intersection?: BoundingBox): void {
+            if (!_intersection) {
+                this._acceleration.y = GRAVITY;
             }
-            this._acceleration.y = GRAVITY;
         }
 
         public get velocity(): FudgeCore.Vector2 {
             return this._velocity;
         }
 
-        public updateVelocity(): void {
+        public updateVelocity(_intersection?: BoundingBox): void {
             this._velocity.add(this._acceleration);
-            if (this._intersection) {
-                this._velocity.y = Math.max(this._velocity.y, 0);
+            if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
+                this._velocity.y = 0;
             }
             this._acceleration = FudgeCore.Vector2.ZERO();
 
@@ -62,10 +55,10 @@ namespace Script {
             }
         }
 
-        public updatePosition(): void {
+        public updatePosition(_intersection?: BoundingBox): void {
             this._position.add(this._velocity.toVector3());
-            if (this._intersection && this.position.y - GRAVITY < this._intersection.top) {
-                this._position.y = this._intersection.top;
+            if (_intersection && this._position.y < _intersection.top) {
+                this._position.y = _intersection.top;
             }
             this._cmp.mtxLocal.translation = this._position;
         }
@@ -78,31 +71,42 @@ namespace Script {
             this._velocity.add(_impulse);
         }
 
-        public checkCollision(): void {
+        public checkCollision(_char: Character): BoundingBox {
+            _char.applyGravity();
+            _char.updateVelocity();
+            _char.updatePosition();
             const collisionChecker = new CollisionChecker();
-            const collisions = collidables
-                .map((def): Tile[] => {
-                    return this._viewport
-                        .getBranch()
-                        .getChildrenByName('Terrain')[0]
-                        .getChildrenByName(def.name)
-                        .map((node) => ({ cmp: node, definition: def }));
-                })
-                .reduce((a, b) => a.concat(b), [])
-                .map((floor) => {
-                    return collisionChecker.checkCollision({ cmp: this._cmp, definition: this._definition }, floor);
-                })
-                .filter((intersection) => {
-                    return intersection !== null;
+            const tilesToCollideWith: Tile[] = getAllMeshesInNode(
+                this._viewport.getBranch().getChildrenByName('Terrain')[0]
+            )
+                .filter((component) => collidables.map((def) => def.name).includes(component.mesh.name))
+                .map((component) => {
+                    return {
+                        translation: component.mtxWorld.translation,
+                        definition: collidables.find((def) => def.name === component.mesh.name),
+                    };
                 });
 
-            if (collisions.length > 0) {
-                this._intersection = collisions.reduce((a, b) => {
-                    return a.height > b.height ? a : b;
-                });
-                return;
-            }
-            this._intersection = null;
+            return tilesToCollideWith
+                .map((tile) => {
+                    return collisionChecker.checkCollision(
+                        {
+                            translation: _char.position,
+                            definition: _char._definition,
+                        },
+                        tile
+                    );
+                })
+                .filter((intersection) => intersection !== null)
+                .sort((a, b) => {
+                    return this.compareDistances(a.position, b.position);
+                })[0];
+        }
+
+        private compareDistances(a: FudgeCore.Vector2, b: FudgeCore.Vector2): 1 | -1 {
+            const distanceA = (this._position.x - a.x) ** 2 + (this._position.y - a.y) ** 2;
+            const distanceB = (this._position.x - b.x) ** 2 + (this._position.y - b.y) ** 2;
+            return distanceA > distanceB ? 1 : -1;
         }
     }
 }
