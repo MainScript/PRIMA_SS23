@@ -21,17 +21,18 @@ namespace Script {
     }
 
     function update(_event: Event): void {
+        const timeDeltaSeconds: number = fudge.Loop.timeFrameGame / 1000;
         if (sonic) {
             sonic.stop();
             if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.A, fudge.KEYBOARD_CODE.ARROW_LEFT])) {
-                sonic.move(Direction.LEFT);
+                sonic.move(Direction.LEFT, timeDeltaSeconds);
             } else if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.D, fudge.KEYBOARD_CODE.ARROW_RIGHT])) {
-                sonic.move(Direction.RIGHT);
+                sonic.move(Direction.RIGHT, timeDeltaSeconds);
             }
             if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.W, fudge.KEYBOARD_CODE.ARROW_UP])) {
-                sonic.jump();
+                sonic.jump(timeDeltaSeconds);
             }
-            sonic.update();
+            sonic.update(timeDeltaSeconds);
             viewCamera.follow(sonic.character);
         }
         // if space is pressed, stop the loop

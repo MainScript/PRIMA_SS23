@@ -31,13 +31,13 @@ declare namespace Script {
         get position(): FudgeCore.Vector3;
         set acceleration(_acceleration: FudgeCore.Vector2);
         get acceleration(): FudgeCore.Vector2;
-        applyGravity(_intersection?: BoundingBox): void;
+        applyGravity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
         get velocity(): FudgeCore.Vector2;
         updateVelocity(_intersection?: BoundingBox): void;
         updatePosition(_intersection?: BoundingBox): void;
         applyForce(_force: FudgeCore.Vector2): void;
         applyImpulse(_impulse: FudgeCore.Vector2): void;
-        checkCollision(_char: Character): BoundingBox;
+        checkCollision(_char: Character, _timeDeltaSeconds: number): BoundingBox;
         private compareDistances;
     }
 }
@@ -47,9 +47,9 @@ declare namespace Script {
         private _collision;
         constructor(viewport: FudgeCore.Viewport);
         get character(): Character;
-        update(): void;
-        jump(): void;
-        move(_direction: Direction): void;
+        update(_timeDeltaSeconds: number): void;
+        jump(_timeDeltaSeconds: number): void;
+        move(_direction: Direction, _timeDeltaSeconds: number): void;
         stop(): void;
     }
 }

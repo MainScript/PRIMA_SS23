@@ -25,9 +25,9 @@ namespace Script {
             return this._acceleration;
         }
 
-        public applyGravity(_intersection?: BoundingBox): void {
+        public applyGravity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void {
             if (!_intersection) {
-                this._acceleration.y = GRAVITY;
+                this._acceleration.y = GRAVITY * _timeDeltaSeconds;
             }
         }
 
@@ -71,8 +71,8 @@ namespace Script {
             this._velocity.add(_impulse);
         }
 
-        public checkCollision(_char: Character): BoundingBox {
-            _char.applyGravity();
+        public checkCollision(_char: Character, _timeDeltaSeconds: number): BoundingBox {
+            _char.applyGravity(_timeDeltaSeconds);
             _char.updateVelocity();
             _char.updatePosition();
             const collisionChecker = new CollisionChecker();
