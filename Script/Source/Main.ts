@@ -33,7 +33,6 @@ namespace Script {
             }
             sonic.update();
             viewCamera.follow(sonic.character);
-            console.log(viewCamera.position);
         }
         // if space is pressed, stop the loop
         if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.SPACE])) {

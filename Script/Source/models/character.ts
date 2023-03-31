@@ -1,6 +1,6 @@
 namespace Script {
     export interface CharacterSprite extends Sprite {
-        cmp: FudgeCore.Node;
+        translation: FudgeCore.Vector3;
         definition: CharacterDefinition;
     }
 
