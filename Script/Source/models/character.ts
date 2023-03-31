@@ -10,7 +10,7 @@ namespace Script {
 
     export interface PlayableCharacterDefinition extends CharacterDefinition {
         jumpImpulse: number;
-        moveForce: number;
+        moveAcceleration: number;
         framesToStop: number;
     }
 }

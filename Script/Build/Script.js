@@ -45,32 +45,27 @@ var Script;
     let viewport;
     let sonic;
     let viewCamera;
+    let keyboardHandler;
     document.addEventListener('interactiveViewportStarted', start);
     function start(_event) {
         viewport = _event.detail;
         viewCamera = new Script.Camera(3, 1, 6, viewport);
         viewport.camera = viewCamera.cmp;
         sonic = new Script.Sonic(viewport);
+        keyboardHandler = new Script.KeyboardHandler();
         fudge.Loop.addEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
         fudge.Loop.start();
     }
     function update(_event) {
+        const timeDeltaSeconds = fudge.Loop.timeFrameGame / 1000;
         if (sonic) {
-            sonic.stop();
-            if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.A, fudge.KEYBOARD_CODE.ARROW_LEFT])) {
-                sonic.move(Script.Direction.LEFT);
-            }
-            else if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.D, fudge.KEYBOARD_CODE.ARROW_RIGHT])) {
-                sonic.move(Script.Direction.RIGHT);
-            }
-            if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.W, fudge.KEYBOARD_CODE.ARROW_UP])) {
-                sonic.jump();
-            }
-            sonic.update();
+            keyboardHandler.handleInputs(sonic, timeDeltaSeconds);
+            sonic.update(timeDeltaSeconds);
             viewCamera.follow(sonic.character);
         }
         // if space is pressed, stop the loop
-        if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.SPACE])) {
+        // REMOVE THIS IN PRODUCTION
+        if (fudge.Keyboard.isPressedOne([fudge.KEYBOARD_CODE.SEVEN])) {
             fudge.Loop.removeEventListener("loopFrame" /* fudge.EVENT.LOOP_FRAME */, update);
             console.log('Loop stopped');
         }
@@ -124,36 +119,43 @@ var Script;
         get acceleration() {
             return this._acceleration;
         }
-        applyGravity(_intersection) {
-            if (!_intersection) {
-                this._acceleration.y = Script.GRAVITY;
-            }
+        set velocity(_velocity) {
+            this._velocity = _velocity;
         }
         get velocity() {
             return this._velocity;
         }
-        updateVelocity(_intersection) {
+        reset() {
+            this._acceleration = FudgeCore.Vector2.ZERO();
+            this._velocity = FudgeCore.Vector2.ZERO();
+        }
+        applyGravity(_timeDeltaSeconds, _intersection) {
+            if (!_intersection) {
+                this._acceleration.y = Script.GRAVITY * _timeDeltaSeconds;
+            }
+        }
+        updateVelocity(_timeDeltaSeconds, _intersection) {
             this._velocity.add(this._acceleration);
             if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
-                this._velocity.y = 0;
+                this._velocity.y = Math.max(0, this._velocity.y);
             }
             this._acceleration = FudgeCore.Vector2.ZERO();
-            if (this._velocity.x > this._definition.terminalVelocity.x) {
-                this._velocity.x = this._definition.terminalVelocity.x;
+            if (this._velocity.x > this._definition.terminalVelocity.x * _timeDeltaSeconds) {
+                this._velocity.x = this._definition.terminalVelocity.x * _timeDeltaSeconds;
             }
-            else if (this._velocity.x < -this._definition.terminalVelocity.x) {
-                this._velocity.x = -this._definition.terminalVelocity.x;
+            else if (this._velocity.x < -this._definition.terminalVelocity.x * _timeDeltaSeconds) {
+                this._velocity.x = -this._definition.terminalVelocity.x * _timeDeltaSeconds;
             }
-            if (this._velocity.y > this._definition.terminalVelocity.y) {
-                this._velocity.y = this._definition.terminalVelocity.y;
+            if (this._velocity.y > this._definition.terminalVelocity.y * _timeDeltaSeconds) {
+                this._velocity.y = this._definition.terminalVelocity.y * _timeDeltaSeconds;
             }
-            else if (this._velocity.y < -this._definition.terminalVelocity.y) {
-                this._velocity.y = -this._definition.terminalVelocity.y;
+            else if (this._velocity.y < -this._definition.terminalVelocity.y * _timeDeltaSeconds) {
+                this._velocity.y = -this._definition.terminalVelocity.y * _timeDeltaSeconds;
             }
         }
         updatePosition(_intersection) {
             this._position.add(this._velocity.toVector3());
-            if (_intersection && this._position.y < _intersection.top) {
+            if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
                 this._position.y = _intersection.top;
             }
             this._cmp.mtxLocal.translation = this._position;
@@ -164,9 +166,9 @@ var Script;
         applyImpulse(_impulse) {
             this._velocity.add(_impulse);
         }
-        checkCollision(_char) {
-            _char.applyGravity();
-            _char.updateVelocity();
+        checkCollision(_char, _timeDeltaSeconds) {
+            _char.applyGravity(_timeDeltaSeconds);
+            _char.updateVelocity(_timeDeltaSeconds);
             _char.updatePosition();
             const collisionChecker = new Script.CollisionChecker();
             const tilesToCollideWith = Script.getAllMeshesInNode(this._viewport.getBranch().getChildrenByName('Terrain')[0])
@@ -208,20 +210,21 @@ var Script;
         get character() {
             return this._character;
         }
-        update() {
+        update(_timeDeltaSeconds) {
             const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
-            this._collision = this._character.checkCollision(_clone);
-            this._character.applyGravity(this._collision);
-            this._character.updateVelocity(this._collision);
+            _clone.reset();
+            this._collision = _clone.checkCollision(_clone, _timeDeltaSeconds);
+            this._character.applyGravity(_timeDeltaSeconds, this._collision);
+            this._character.updateVelocity(_timeDeltaSeconds, this._collision);
             this._character.updatePosition(this._collision);
         }
-        jump() {
+        jump(_timeDeltaSeconds) {
             if (this._collision) {
-                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
+                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse * _timeDeltaSeconds));
             }
         }
-        move(_direction) {
-            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveForce, 0));
+        move(_direction, _timeDeltaSeconds) {
+            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveAcceleration * _timeDeltaSeconds, 0));
         }
         stop() {
             this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / Script.defSonic.framesToStop, 0));
@@ -334,6 +337,9 @@ var Script;
                 if (this.objectIsTile(object2)) {
                     _returnHeight = this.mapXToAbsoluteYUsingSlope(object1.translation.x, object2);
                 }
+                if (object1.translation.y > rect2.bottom + _returnHeight) {
+                    return null;
+                }
                 return this.getRectangle(new FudgeCore.Vector2(object1.translation.x, rect2.bottom), new FudgeCore.Vector2(intersection.width, _returnHeight), FudgeCore.ORIGIN2D.BOTTOMCENTER);
             }
             return null;
@@ -357,6 +363,40 @@ var Script;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
+    class KeyboardHandler {
+        controlsKeys;
+        constructor() {
+            this.controlsKeys = [
+                FudgeCore.KEYBOARD_CODE.A,
+                FudgeCore.KEYBOARD_CODE.ARROW_LEFT,
+                FudgeCore.KEYBOARD_CODE.D,
+                FudgeCore.KEYBOARD_CODE.ARROW_RIGHT,
+                FudgeCore.KEYBOARD_CODE.W,
+                FudgeCore.KEYBOARD_CODE.ARROW_UP,
+            ];
+        }
+        handleInputs(_sonic, _timeDeltaSeconds) {
+            // Yes, it is intentional that jumping doesn't stop Sonic
+            // I think it's more fun to have a bhopping Sonic :D
+            if (!FudgeCore.Keyboard.isPressedOne(this.controlsKeys)) {
+                _sonic.stop();
+            }
+            // also hi
+            if (FudgeCore.Keyboard.isPressedOne([FudgeCore.KEYBOARD_CODE.A, FudgeCore.KEYBOARD_CODE.ARROW_LEFT])) {
+                _sonic.move(Script.Direction.LEFT, _timeDeltaSeconds);
+            }
+            else if (FudgeCore.Keyboard.isPressedOne([FudgeCore.KEYBOARD_CODE.D, FudgeCore.KEYBOARD_CODE.ARROW_RIGHT])) {
+                _sonic.move(Script.Direction.RIGHT, _timeDeltaSeconds);
+            }
+            if (FudgeCore.Keyboard.isPressedOne([FudgeCore.KEYBOARD_CODE.W, FudgeCore.KEYBOARD_CODE.ARROW_UP])) {
+                _sonic.jump(_timeDeltaSeconds);
+            }
+        }
+    }
+    Script.KeyboardHandler = KeyboardHandler;
+})(Script || (Script = {}));
+var Script;
+(function (Script) {
     function getAllMeshesInNode(_node) {
         let meshes = [];
         for (const child of _node.getChildren()) {
@@ -374,10 +414,10 @@ var Script;
     Script.defSonic = {
         name: 'Sonic',
         height: 1,
-        terminalVelocity: new FudgeCore.Vector2(0.05, 0.15),
+        terminalVelocity: new FudgeCore.Vector2(4, 10),
         width: 1,
-        jumpImpulse: 0.25,
-        moveForce: 0.0025,
+        jumpImpulse: 15,
+        moveAcceleration: 0.5,
         framesToStop: 20,
         origin: FudgeCore.ORIGIN2D.BOTTOMCENTER,
     };
@@ -392,7 +432,7 @@ var Script;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
-    Script.GRAVITY = -0.005;
+    Script.GRAVITY = -0.5;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {

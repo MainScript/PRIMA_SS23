@@ -31,13 +31,15 @@ declare namespace Script {
         get position(): FudgeCore.Vector3;
         set acceleration(_acceleration: FudgeCore.Vector2);
         get acceleration(): FudgeCore.Vector2;
-        applyGravity(_intersection?: BoundingBox): void;
+        set velocity(_velocity: FudgeCore.Vector2);
         get velocity(): FudgeCore.Vector2;
-        updateVelocity(_intersection?: BoundingBox): void;
+        reset(): void;
+        applyGravity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
+        updateVelocity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
         updatePosition(_intersection?: BoundingBox): void;
         applyForce(_force: FudgeCore.Vector2): void;
         applyImpulse(_impulse: FudgeCore.Vector2): void;
-        checkCollision(_char: Character): BoundingBox;
+        checkCollision(_char: Character, _timeDeltaSeconds: number): BoundingBox;
         private compareDistances;
     }
 }
@@ -47,9 +49,9 @@ declare namespace Script {
         private _collision;
         constructor(viewport: FudgeCore.Viewport);
         get character(): Character;
-        update(): void;
-        jump(): void;
-        move(_direction: Direction): void;
+        update(_timeDeltaSeconds: number): void;
+        jump(_timeDeltaSeconds: number): void;
+        move(_direction: Direction, _timeDeltaSeconds: number): void;
         stop(): void;
     }
 }
@@ -80,6 +82,13 @@ declare namespace Script {
     }
 }
 declare namespace Script {
+    class KeyboardHandler {
+        private controlsKeys;
+        constructor();
+        handleInputs(_sonic: Sonic, _timeDeltaSeconds: number): void;
+    }
+}
+declare namespace Script {
     function getAllMeshesInNode(_node: FudgeCore.Node): FudgeCore.ComponentMesh[];
 }
 declare namespace Script {
@@ -92,7 +101,7 @@ declare namespace Script {
     }
 }
 declare namespace Script {
-    const GRAVITY = -0.005;
+    const GRAVITY = -0.5;
 }
 declare namespace Script {
     const defFloorStraight4x1: TileDefinition;
@@ -109,7 +118,7 @@ declare namespace Script {
     }
     interface PlayableCharacterDefinition extends CharacterDefinition {
         jumpImpulse: number;
-        moveForce: number;
+        moveAcceleration: number;
         framesToStop: number;
     }
 }

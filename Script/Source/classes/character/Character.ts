@@ -25,39 +25,48 @@ namespace Script {
             return this._acceleration;
         }
 
-        public applyGravity(_intersection?: BoundingBox): void {
-            if (!_intersection) {
-                this._acceleration.y = GRAVITY;
-            }
+        public set velocity(_velocity: FudgeCore.Vector2) {
+            this._velocity = _velocity;
         }
 
         public get velocity(): FudgeCore.Vector2 {
             return this._velocity;
         }
 
-        public updateVelocity(_intersection?: BoundingBox): void {
+        public reset(): void {
+            this._acceleration = FudgeCore.Vector2.ZERO();
+            this._velocity = FudgeCore.Vector2.ZERO();
+        }
+
+        public applyGravity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void {
+            if (!_intersection) {
+                this._acceleration.y = GRAVITY * _timeDeltaSeconds;
+            }
+        }
+
+        public updateVelocity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void {
             this._velocity.add(this._acceleration);
             if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
-                this._velocity.y = 0;
+                this._velocity.y = Math.max(0, this._velocity.y);
             }
             this._acceleration = FudgeCore.Vector2.ZERO();
 
-            if (this._velocity.x > this._definition.terminalVelocity.x) {
-                this._velocity.x = this._definition.terminalVelocity.x;
-            } else if (this._velocity.x < -this._definition.terminalVelocity.x) {
-                this._velocity.x = -this._definition.terminalVelocity.x;
+            if (this._velocity.x > this._definition.terminalVelocity.x * _timeDeltaSeconds) {
+                this._velocity.x = this._definition.terminalVelocity.x * _timeDeltaSeconds;
+            } else if (this._velocity.x < -this._definition.terminalVelocity.x * _timeDeltaSeconds) {
+                this._velocity.x = -this._definition.terminalVelocity.x * _timeDeltaSeconds;
             }
 
-            if (this._velocity.y > this._definition.terminalVelocity.y) {
-                this._velocity.y = this._definition.terminalVelocity.y;
-            } else if (this._velocity.y < -this._definition.terminalVelocity.y) {
-                this._velocity.y = -this._definition.terminalVelocity.y;
+            if (this._velocity.y > this._definition.terminalVelocity.y * _timeDeltaSeconds) {
+                this._velocity.y = this._definition.terminalVelocity.y * _timeDeltaSeconds;
+            } else if (this._velocity.y < -this._definition.terminalVelocity.y * _timeDeltaSeconds) {
+                this._velocity.y = -this._definition.terminalVelocity.y * _timeDeltaSeconds;
             }
         }
 
         public updatePosition(_intersection?: BoundingBox): void {
             this._position.add(this._velocity.toVector3());
-            if (_intersection && this._position.y < _intersection.top) {
+            if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
                 this._position.y = _intersection.top;
             }
             this._cmp.mtxLocal.translation = this._position;
@@ -71,9 +80,9 @@ namespace Script {
             this._velocity.add(_impulse);
         }
 
-        public checkCollision(_char: Character): BoundingBox {
-            _char.applyGravity();
-            _char.updateVelocity();
+        public checkCollision(_char: Character, _timeDeltaSeconds: number): BoundingBox {
+            _char.applyGravity(_timeDeltaSeconds);
+            _char.updateVelocity(_timeDeltaSeconds);
             _char.updatePosition();
             const collisionChecker = new CollisionChecker();
             const tilesToCollideWith: Tile[] = getAllMeshesInNode(

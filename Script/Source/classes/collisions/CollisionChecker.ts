@@ -20,6 +20,9 @@ namespace Script {
                 if (this.objectIsTile(object2)) {
                     _returnHeight = this.mapXToAbsoluteYUsingSlope(object1.translation.x, object2);
                 }
+                if (object1.translation.y > rect2.bottom + _returnHeight) {
+                    return null;
+                }
                 return this.getRectangle(
                     new FudgeCore.Vector2(object1.translation.x, rect2.bottom),
                     new FudgeCore.Vector2(intersection.width, _returnHeight),

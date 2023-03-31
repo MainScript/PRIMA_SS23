@@ -10,22 +10,25 @@ namespace Script {
             return this._character;
         }
 
-        public update(): void {
+        public update(_timeDeltaSeconds: number): void {
             const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
-            this._collision = this._character.checkCollision(_clone);
-            this._character.applyGravity(this._collision);
-            this._character.updateVelocity(this._collision);
+            _clone.reset();
+            this._collision = _clone.checkCollision(_clone, _timeDeltaSeconds);
+            this._character.applyGravity(_timeDeltaSeconds, this._collision);
+            this._character.updateVelocity(_timeDeltaSeconds, this._collision);
             this._character.updatePosition(this._collision);
         }
 
-        public jump(): void {
+        public jump(_timeDeltaSeconds: number): void {
             if (this._collision) {
-                this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse));
+                this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse * _timeDeltaSeconds));
             }
         }
 
-        public move(_direction: Direction): void {
-            this._character.applyForce(new FudgeCore.Vector2(_direction * defSonic.moveForce, 0));
+        public move(_direction: Direction, _timeDeltaSeconds: number): void {
+            this._character.applyForce(
+                new FudgeCore.Vector2(_direction * defSonic.moveAcceleration * _timeDeltaSeconds, 0)
+            );
         }
 
         public stop(): void {
