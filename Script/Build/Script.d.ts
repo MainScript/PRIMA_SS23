@@ -106,6 +106,7 @@ declare namespace Script {
 declare namespace Script {
     const defFloorStraight4x1: TileDefinition;
     const defRampUpFull: TileDefinition;
+    const defBridge: TileDefinition;
     const collidables: TileDefinition[];
 }
 declare namespace Script {
