@@ -14,25 +14,26 @@ namespace Script {
             const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
             _clone.reset();
             this._collision = _clone.checkCollision(_clone, _timeDeltaSeconds);
-            this._character.applyGravity(_timeDeltaSeconds, this._collision);
+            this._character.applyGravity(this._collision);
             this._character.updateVelocity(_timeDeltaSeconds, this._collision);
-            this._character.updatePosition(this._collision);
+            this._character.updatePosition(_timeDeltaSeconds,this._collision);
         }
 
         public jump(_timeDeltaSeconds: number): void {
             if (this._collision) {
-                this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse * _timeDeltaSeconds));
+                this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse));
+                this._character.updatePosition(_timeDeltaSeconds, null)
             }
         }
 
         public move(_direction: Direction, _timeDeltaSeconds: number): void {
             this._character.applyForce(
-                new FudgeCore.Vector2(_direction * defSonic.moveAcceleration * _timeDeltaSeconds, 0)
+                new FudgeCore.Vector2(_direction * defSonic.moveAcceleration, 0)
             );
         }
 
         public stop(): void {
-            this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / defSonic.framesToStop, 0));
+            this._character.applyForce(new FudgeCore.Vector2(-(this._character.velocity.x / defSonic.secondsToStop), 0));
         }
     }
 }
