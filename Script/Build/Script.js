@@ -129,32 +129,34 @@ var Script;
             this._acceleration = FudgeCore.Vector2.ZERO();
             this._velocity = FudgeCore.Vector2.ZERO();
         }
-        applyGravity(_timeDeltaSeconds, _intersection) {
+        applyGravity(_intersection) {
             if (!_intersection) {
-                this._acceleration.y = Script.GRAVITY * _timeDeltaSeconds;
+                this._acceleration.y = Script.GRAVITY;
             }
         }
         updateVelocity(_timeDeltaSeconds, _intersection) {
+            this._acceleration.scale(_timeDeltaSeconds);
             this._velocity.add(this._acceleration);
             if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
                 this._velocity.y = Math.max(0, this._velocity.y);
             }
             this._acceleration = FudgeCore.Vector2.ZERO();
-            if (this._velocity.x > this._definition.terminalVelocity.x * _timeDeltaSeconds) {
-                this._velocity.x = this._definition.terminalVelocity.x * _timeDeltaSeconds;
+            if (this._velocity.x > this._definition.terminalVelocity.x) {
+                this._velocity.x = this._definition.terminalVelocity.x;
             }
-            else if (this._velocity.x < -this._definition.terminalVelocity.x * _timeDeltaSeconds) {
-                this._velocity.x = -this._definition.terminalVelocity.x * _timeDeltaSeconds;
+            else if (this._velocity.x < -this._definition.terminalVelocity.x) {
+                this._velocity.x = -this._definition.terminalVelocity.x;
             }
-            if (this._velocity.y > this._definition.terminalVelocity.y * _timeDeltaSeconds) {
-                this._velocity.y = this._definition.terminalVelocity.y * _timeDeltaSeconds;
+            if (this._velocity.y > this._definition.terminalVelocity.y) {
+                this._velocity.y = this._definition.terminalVelocity.y;
             }
-            else if (this._velocity.y < -this._definition.terminalVelocity.y * _timeDeltaSeconds) {
-                this._velocity.y = -this._definition.terminalVelocity.y * _timeDeltaSeconds;
+            else if (this._velocity.y < -this._definition.terminalVelocity.y) {
+                this._velocity.y = -this._definition.terminalVelocity.y;
             }
         }
-        updatePosition(_intersection) {
-            this._position.add(this._velocity.toVector3());
+        updatePosition(_timeDeltaSeconds, _intersection) {
+            const newVel = new FudgeCore.Vector2(this._velocity.x * _timeDeltaSeconds, this._velocity.y * _timeDeltaSeconds);
+            this._position.add(newVel.toVector3());
             if (_intersection && this._position.y + this.velocity.y < _intersection.top) {
                 this._position.y = _intersection.top;
             }
@@ -167,9 +169,9 @@ var Script;
             this._velocity.add(_impulse);
         }
         checkCollision(_char, _timeDeltaSeconds) {
-            _char.applyGravity(_timeDeltaSeconds);
+            _char.applyGravity();
             _char.updateVelocity(_timeDeltaSeconds);
-            _char.updatePosition();
+            _char.updatePosition(_timeDeltaSeconds);
             const collisionChecker = new Script.CollisionChecker();
             const tilesToCollideWith = Script.getAllMeshesInNode(this._viewport.getBranch().getChildrenByName('Terrain')[0])
                 .filter((component) => Script.collidables.map((def) => def.name).includes(component.mesh.name))
@@ -196,6 +198,10 @@ var Script;
             const distanceB = (this._position.x - b.x) ** 2 + (this._position.y - b.y) ** 2;
             return distanceA > distanceB ? 1 : -1;
         }
+        changeAnimation(_animation) {
+            const newAnim = FudgeCore.Project.getResourcesByName(_animation)[0];
+            this._cmp.getComponent(FudgeCore.ComponentAnimator).animation = newAnim;
+        }
     }
     Script.Character = Character;
 })(Script || (Script = {}));
@@ -214,20 +220,22 @@ var Script;
             const _clone = Object.assign(Object.create(Object.getPrototypeOf(this.character)), this.character);
             _clone.reset();
             this._collision = _clone.checkCollision(_clone, _timeDeltaSeconds);
-            this._character.applyGravity(_timeDeltaSeconds, this._collision);
+            this._character.applyGravity(this._collision);
             this._character.updateVelocity(_timeDeltaSeconds, this._collision);
-            this._character.updatePosition(this._collision);
+            this._character.updatePosition(_timeDeltaSeconds, this._collision);
         }
         jump(_timeDeltaSeconds) {
             if (this._collision) {
-                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse * _timeDeltaSeconds));
+                this._character.applyImpulse(new FudgeCore.Vector2(0, Script.defSonic.jumpImpulse));
+                this._character.updatePosition(_timeDeltaSeconds, null);
             }
+            this._character.changeAnimation("SonicIdle");
         }
         move(_direction, _timeDeltaSeconds) {
-            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveAcceleration * _timeDeltaSeconds, 0));
+            this._character.applyForce(new FudgeCore.Vector2(_direction * Script.defSonic.moveAcceleration, 0));
         }
         stop() {
-            this._character.applyForce(new FudgeCore.Vector2(-this._character.velocity.x / Script.defSonic.framesToStop, 0));
+            this._character.applyForce(new FudgeCore.Vector2(-(this._character.velocity.x / Script.defSonic.secondsToStop), 0));
         }
     }
     Script.Sonic = Sonic;
@@ -414,11 +422,11 @@ var Script;
     Script.defSonic = {
         name: 'Sonic',
         height: 1,
-        terminalVelocity: new FudgeCore.Vector2(4, 10),
+        terminalVelocity: new FudgeCore.Vector2(6, 10),
         width: 1,
-        jumpImpulse: 15,
-        moveAcceleration: 0.5,
-        framesToStop: 20,
+        jumpImpulse: 5,
+        moveAcceleration: 12,
+        secondsToStop: 0.1,
         origin: FudgeCore.ORIGIN2D.BOTTOMCENTER,
     };
 })(Script || (Script = {}));
@@ -432,7 +440,7 @@ var Script;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
-    Script.GRAVITY = -0.5;
+    Script.GRAVITY = -10;
 })(Script || (Script = {}));
 var Script;
 (function (Script) {

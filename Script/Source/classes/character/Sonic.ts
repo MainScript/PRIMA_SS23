@@ -24,6 +24,8 @@ namespace Script {
                 this._character.applyImpulse(new FudgeCore.Vector2(0, defSonic.jumpImpulse));
                 this._character.updatePosition(_timeDeltaSeconds, null)
             }
+
+            this._character.changeAnimation("SonicIdle");
         }
 
         public move(_direction: Direction, _timeDeltaSeconds: number): void {

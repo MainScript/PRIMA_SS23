@@ -119,5 +119,10 @@ namespace Script {
             const distanceB = (this._position.x - b.x) ** 2 + (this._position.y - b.y) ** 2;
             return distanceA > distanceB ? 1 : -1;
         }
+
+        public changeAnimation(_animation: string): void {
+            const newAnim = FudgeCore.Project.getResourcesByName(_animation)[0] as FudgeCore.AnimationSprite;
+            this._cmp.getComponent(FudgeCore.ComponentAnimator).animation = newAnim;
+        }
     }
 }

@@ -34,13 +34,14 @@ declare namespace Script {
         set velocity(_velocity: FudgeCore.Vector2);
         get velocity(): FudgeCore.Vector2;
         reset(): void;
-        applyGravity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
+        applyGravity(_intersection?: BoundingBox): void;
         updateVelocity(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
-        updatePosition(_intersection?: BoundingBox): void;
+        updatePosition(_timeDeltaSeconds: number, _intersection?: BoundingBox): void;
         applyForce(_force: FudgeCore.Vector2): void;
         applyImpulse(_impulse: FudgeCore.Vector2): void;
         checkCollision(_char: Character, _timeDeltaSeconds: number): BoundingBox;
         private compareDistances;
+        changeAnimation(_animation: string): void;
     }
 }
 declare namespace Script {
@@ -101,7 +102,7 @@ declare namespace Script {
     }
 }
 declare namespace Script {
-    const GRAVITY = -0.5;
+    const GRAVITY = -10;
 }
 declare namespace Script {
     const defFloorStraight4x1: TileDefinition;
@@ -120,7 +121,7 @@ declare namespace Script {
     interface PlayableCharacterDefinition extends CharacterDefinition {
         jumpImpulse: number;
         moveAcceleration: number;
-        framesToStop: number;
+        secondsToStop: number;
     }
 }
 declare namespace Script {
