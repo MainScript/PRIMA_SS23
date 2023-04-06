@@ -190,6 +190,26 @@
       }
     }
   },
+  "AnimationSprite|2023-04-06T12:55:09.406Z|60384": {
+    "ƒ.AnimationSprite": {
+      "idResource": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
+      "idTexture": "TextureImage|2023-03-30T09:11:24.858Z|34758",
+      "frames": 5,
+      "wrapAfter": 5,
+      "start": "[0, 40]",
+      "size": "[37, 37]",
+      "next": "[39, 0]",
+      "wrap": "[0, 80]",
+      "Animation": {
+        "idResource": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
+        "name": "AnimationSprite",
+        "labels": {},
+        "events": {},
+        "framesPerSecond": 5,
+        "animationStructure": {}
+      }
+    }
+  },
   "Graph|2023-03-22T15:56:51.412Z|62202": {
     "ƒ.Graph": {
       "name": "Game",
@@ -1863,6 +1883,21 @@
                     "Component": {
                       "active": true
                     }
+                  }
+                }
+              ],
+              "ComponentAnimator": [
+                {
+                  "ƒ.ComponentAnimator": {
+                    "Component": {
+                      "active": true
+                    },
+                    "idAnimation": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
+                    "playmode": "loop",
+                    "quantization": "discrete",
+                    "scale": 1,
+                    "scaleWithGameTime": true,
+                    "animateInEditor": false
                   }
                 }
               ]
