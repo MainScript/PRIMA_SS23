@@ -197,7 +197,7 @@
       "frames": 5,
       "wrapAfter": 5,
       "start": "[0, 40]",
-      "size": "[37, 37]",
+      "size": "[37, 38]",
       "next": "[39, 0]",
       "wrap": "[0, 80]",
       "Animation": {
@@ -205,7 +205,7 @@
         "name": "SonicRunning",
         "labels": {},
         "events": {},
-        "framesPerSecond": 2,
+        "framesPerSecond": 8,
         "animationStructure": {}
       }
     }
@@ -1892,7 +1892,7 @@
                     "Component": {
                       "active": true
                     },
-                    "idAnimation": "AnimationSprite|2023-04-06T13:06:24.303Z|75649",
+                    "idAnimation": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
                     "playmode": "loop",
                     "quantization": "discrete",
                     "scale": 1,
