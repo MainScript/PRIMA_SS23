@@ -202,10 +202,10 @@
       "wrap": "[0, 80]",
       "Animation": {
         "idResource": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
-        "name": "AnimationSprite",
+        "name": "SonicRunning",
         "labels": {},
         "events": {},
-        "framesPerSecond": 5,
+        "framesPerSecond": 2,
         "animationStructure": {}
       }
     }
@@ -1892,7 +1892,7 @@
                     "Component": {
                       "active": true
                     },
-                    "idAnimation": "AnimationSprite|2023-04-06T12:55:09.406Z|60384",
+                    "idAnimation": "AnimationSprite|2023-04-06T13:06:24.303Z|75649",
                     "playmode": "loop",
                     "quantization": "discrete",
                     "scale": 1,
@@ -1908,6 +1908,26 @@
       ],
       "idResource": "Graph|2023-03-22T15:56:51.412Z|62202",
       "type": "Graph"
+    }
+  },
+  "AnimationSprite|2023-04-06T13:06:24.303Z|75649": {
+    "ƒ.AnimationSprite": {
+      "idResource": "AnimationSprite|2023-04-06T13:06:24.303Z|75649",
+      "idTexture": "TextureImage|2023-03-30T09:11:24.858Z|34758",
+      "frames": 3,
+      "wrapAfter": 5,
+      "start": "[39, 0]",
+      "size": "[39, 39]",
+      "next": "[39, 0]",
+      "wrap": "[0, 80]",
+      "Animation": {
+        "idResource": "AnimationSprite|2023-04-06T13:06:24.303Z|75649",
+        "name": "SonicIdle",
+        "labels": {},
+        "events": {},
+        "framesPerSecond": 4,
+        "animationStructure": {}
+      }
     }
   }
 }
